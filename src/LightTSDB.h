@@ -52,8 +52,8 @@
 /// {
 ///     LightTSDB myTSDB;
 ///
-///     myTSDB.Open("mytsdb");
-///     myTSDB.Close();
+///     myTSDB.WriteValue("LucileBedRoom", 24.8);
+///     myTSDB.Flush();
 ///
 ///     return 0;
 /// }
@@ -69,13 +69,21 @@
 #ifndef LIGHTTSDB_H
 #define LIGHTTSDB_H
 
-#include<string>
+#include <string>
+#include <fstream>
+#include <map>
 
 /// \brief    Light time series class.
 /// \details  This class store time series into the file system and can read float values by hours.
 class LightTSDB
 {
     public:
+        struct FilesInfo
+        {
+            ofstream data;
+            ofstream index;
+        };
+
         /// \brief    Constructor of LightTSDB
         /// \details  Constructor of LightTSDB.
         LightTSDB();
@@ -92,7 +100,10 @@ class LightTSDB
         bool WriteValue(std::string sensor, float value);
 
     private:
+        FilesInfo* getFilesInfo(std::string sensor);
         std::string m_Folder;
+        std::string m_LastError;
+        std::map<string, FilesInfo> m_FilesInfo;
 };
 
 #endif // LIGHTTSDB_H

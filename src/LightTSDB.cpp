@@ -38,5 +38,41 @@ LightTSDB::~LightTSDB()
 
 bool LightTSDB::WriteValue(string sensor, float value)
 {
+    FilesInfo* filesInfo;
+
+    filesInfo = getFilesInfo(sensor);
+    if(filesInfo == nullptr) return false;
+
     return true;
+}
+
+FilesInfo* LightTSDB::getHandle(string sensor)
+{
+    FilesInfo filesInfo;
+    map<string,FilesInfo>::iterator it = m_FilesInfo.find(sensor);
+
+
+    if(it != m_FilesInfo.end()) return &(it->second);
+
+    filesInfo.data.open(m_Folder+"/"+sensor+".data", fstream::binary | fstream::in | fstream::app);
+    if(!filesInfo.data)
+    {
+        filesInfo.data.open(m_Folder+"/"+sensor+".data", fstream::binary | fstream::in | fstream::trunc);
+        if(!filesInfo.data)
+        {
+            m_LastError = strerror(errorno);
+            return nullptr;
+        }
+
+        filesInfo.index.open(m_Folder+"/"+sensor+".index", fstream::binary | fstream::in | fstream::trunc);
+        if(!filesInfo.index)
+        {
+            m_LastError = strerror(errorno);
+            return nullptr;
+        }
+
+
+    }
+
+    return nullptr;
 }
