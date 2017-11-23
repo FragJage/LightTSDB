@@ -80,8 +80,10 @@ class LightTSDB
     public:
         struct FilesInfo
         {
-            ofstream data;
-            ofstream index;
+            FilesInfo(std::ofstream data, std::ofstream index): data(data), index(index) {}
+            FilesInfo() {}
+            std::ofstream data;
+            std::ofstream index;
         };
 
         /// \brief    Constructor of LightTSDB
@@ -103,7 +105,7 @@ class LightTSDB
         FilesInfo* getFilesInfo(std::string sensor);
         std::string m_Folder;
         std::string m_LastError;
-        std::map<string, FilesInfo> m_FilesInfo;
+        std::map<std::string, FilesInfo> m_FilesInfo;
 };
 
 #endif // LIGHTTSDB_H

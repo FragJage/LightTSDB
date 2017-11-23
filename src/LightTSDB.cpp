@@ -18,6 +18,7 @@
     along with LightTSDB.  If not, see <http://www.gnu.org/licenses/>.
 */
 /***************************************************************************************************/
+#include <cstring>
 #include "LightTSDB.h"
 
 using namespace std;
@@ -46,7 +47,7 @@ bool LightTSDB::WriteValue(string sensor, float value)
     return true;
 }
 
-FilesInfo* LightTSDB::getHandle(string sensor)
+LightTSDB::FilesInfo* LightTSDB::getFilesInfo(string sensor)
 {
     FilesInfo filesInfo;
     map<string,FilesInfo>::iterator it = m_FilesInfo.find(sensor);
@@ -60,18 +61,28 @@ FilesInfo* LightTSDB::getHandle(string sensor)
         filesInfo.data.open(m_Folder+"/"+sensor+".data", fstream::binary | fstream::in | fstream::trunc);
         if(!filesInfo.data)
         {
-            m_LastError = strerror(errorno);
+            m_LastError = strerror(errno);
             return nullptr;
         }
 
         filesInfo.index.open(m_Folder+"/"+sensor+".index", fstream::binary | fstream::in | fstream::trunc);
         if(!filesInfo.index)
         {
-            m_LastError = strerror(errorno);
+            m_LastError = strerror(errno);
             return nullptr;
         }
 
+        //m_FilesInfo[sensor] = filesInfo;
+        //m_FilesInfo.insert(std::pair<string,FilesInfo>(sensor,filesInfo));
+        m_FilesInfo.insert ( std::make_pair(sensor, filesInfo));
+        return &(m_FilesInfo[sensor]);
+    }
 
+    filesInfo.index.open(m_Folder+"/"+sensor+".index", fstream::binary | fstream::in | fstream::app);
+    if(!filesInfo.index)
+    {
+        m_LastError = strerror(errno);
+        return nullptr;
     }
 
     return nullptr;
