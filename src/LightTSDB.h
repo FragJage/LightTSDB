@@ -70,8 +70,9 @@
 #define LIGHTTSDB_H
 
 #include <string>
-#include <fstream>
 #include <map>
+#include <fstream>
+#include <ctime>
 
 /// \brief    Light time series class.
 /// \details  This class store time series into the file system and can read float values by hours.
@@ -80,11 +81,11 @@ class LightTSDB
     public:
         struct FilesInfo
         {
-            FilesInfo(std::ofstream data, std::ofstream index): data(data), index(index) {}
-            FilesInfo() {}
-            std::ofstream data;
-            std::ofstream index;
+            std::fstream* data;
+            std::fstream* index;
+            std::time_t startHour;
         };
+
 
         /// \brief    Constructor of LightTSDB
         /// \details  Constructor of LightTSDB.
@@ -101,11 +102,39 @@ class LightTSDB
         /// \return   Iterator on the first key in the section
         bool WriteValue(std::string sensor, float value);
 
+        /// \brief    Get last error
+        /// \details  Get the last error message.
+        /// \return   Error message string
+        std::string GetLastError();
+
     private:
+        typedef uint32_t HourlyTimestamp_t;
+        typedef uint16_t HourlyOffset_t;
+        friend class HourlyTimestamp;
+        friend class StreamOffset;
+
         FilesInfo* getFilesInfo(std::string sensor);
+
         std::string m_Folder;
         std::string m_LastError;
         std::map<std::string, FilesInfo> m_FilesInfo;
+
+        static const short ENDLINE;
+};
+
+class HourlyTimestamp
+{
+    public:
+        static LightTSDB::HourlyTimestamp_t FromTimeStruct(struct tm* tmHour);
+        static void ToTimeStruct(struct tm* tmHour, LightTSDB::HourlyTimestamp_t hourlyTimestamp);
+        static std::time_t ReadLastIndex(std::fstream* pFile);
+        static bool Write(LightTSDB::HourlyTimestamp_t hourlyTimestamp, std::fstream* pFile);
+};
+
+class StreamOffset
+{
+    public:
+        static bool Write(std::streampos pos, std::fstream* pFile);
 };
 
 #endif // LIGHTTSDB_H

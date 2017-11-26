@@ -8,8 +8,10 @@ int main()
 {
     LightTSDB myTSDB;
 
+
+
     if(!myTSDB.WriteValue("LucileBedRoomTemperature", 21.8))
-        cout << "Failed to write." << endl;
+        cout << "Failed to write : " << myTSDB.GetLastError() << endl;
     else
         cout << "Write success." << endl;
 
