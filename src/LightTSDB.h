@@ -79,14 +79,6 @@
 class LightTSDB
 {
     public:
-        struct FilesInfo
-        {
-            std::fstream* data;
-            std::fstream* index;
-            std::time_t startHour;
-        };
-
-
         /// \brief    Constructor of LightTSDB
         /// \details  Constructor of LightTSDB.
         LightTSDB();
@@ -108,10 +100,18 @@ class LightTSDB
         std::string GetLastError();
 
     private:
+        struct FilesInfo
+        {
+            std::fstream* data;
+            std::fstream* index;
+            std::time_t startHour;
+        };
+
         typedef uint32_t HourlyTimestamp_t;
         typedef uint16_t HourlyOffset_t;
         friend class HourlyTimestamp;
         friend class StreamOffset;
+        friend class HourlyOffset;
 
         FilesInfo* getFilesInfo(std::string sensor);
 
@@ -127,9 +127,12 @@ class HourlyTimestamp
     public:
         static LightTSDB::HourlyTimestamp_t FromTimeStruct(struct tm* tmHour);
         static void ToTimeStruct(struct tm* tmHour, LightTSDB::HourlyTimestamp_t hourlyTimestamp);
-        static std::time_t ReadLastIndex(std::fstream* pFile);
+        static std::time_t ReadLastIndex(std::fstream* pIndexFile, std::fstream* pDataFile);
         static bool Write(LightTSDB::HourlyTimestamp_t hourlyTimestamp, std::fstream* pFile);
+        static LightTSDB::HourlyTimestamp_t Read(std::fstream* pFile);
         static std::string ToString(LightTSDB::HourlyTimestamp_t hourlyTimestamp);
+    private:
+        static int VerifyDataHourlyTimestamp(LightTSDB::HourlyTimestamp_t hourIndex, std::streampos pos, std::fstream *pDataFile);
 };
 
 class StreamOffset
@@ -137,6 +140,14 @@ class StreamOffset
     public:
         static bool Write(std::fstream* pDataFile, std::fstream* pIndexFile);
         static std::streampos Read(std::fstream* pIndexFile);
+};
+
+class HourlyOffset
+{
+    public:
+        static bool Read(std::fstream* pDataFile, LightTSDB::HourlyOffset_t* offset, float* value);
+        static bool Write(std::fstream* pDataFile, LightTSDB::HourlyOffset_t offset, float value);
+        static bool WriteEndLine(std::fstream* pDataFile);
 };
 
 #endif // LIGHTTSDB_H

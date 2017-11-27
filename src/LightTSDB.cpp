@@ -56,7 +56,6 @@ LightTSDB::~LightTSDB()
 bool LightTSDB::WriteValue(string sensor, float value)
 {
     FilesInfo* filesInfo;
-    HourlyOffset_t delay;
     time_t now;
     struct tm tmNow;
 
@@ -69,7 +68,7 @@ bool LightTSDB::WriteValue(string sensor, float value)
 
     if(difftime(now, filesInfo->startHour)>3599)
     {
-        if(filesInfo->startHour>0) filesInfo->data->write(reinterpret_cast<const char *>(&ENDLINE), sizeof(ENDLINE));
+        if(filesInfo->startHour>0) HourlyOffset::WriteEndLine(filesInfo->data);
 
         tmNow.tm_min = 0;
         tmNow.tm_sec = 0;
@@ -81,9 +80,8 @@ bool LightTSDB::WriteValue(string sensor, float value)
         HourlyTimestamp::Write(hourlyTimestamp, filesInfo->data);
     }
 
-    delay = difftime(now, filesInfo->startHour);
-    filesInfo->data->write(reinterpret_cast<const char *>(&delay), sizeof(delay));
-    filesInfo->data->write(reinterpret_cast<const char *>(&value), sizeof(value));
+    HourlyOffset_t offset = difftime(now, filesInfo->startHour);
+    HourlyOffset::Write(filesInfo->data, offset, value);
 
     return true;
 }
@@ -91,10 +89,7 @@ bool LightTSDB::WriteValue(string sensor, float value)
 LightTSDB::FilesInfo* LightTSDB::getFilesInfo(string sensor)
 {
     map<string,FilesInfo>::iterator it = m_FilesInfo.find(sensor);
-    if(it != m_FilesInfo.end())
-    {
-        return &(it->second);
-    }
+    if(it != m_FilesInfo.end()) return &(it->second);
 
     FilesInfo filesInfo;
     filesInfo.data = new fstream();
@@ -114,9 +109,19 @@ LightTSDB::FilesInfo* LightTSDB::getFilesInfo(string sensor)
         return nullptr;
     }
 
-    filesInfo.startHour = HourlyTimestamp::ReadLastIndex(filesInfo.index);
-    m_FilesInfo[sensor] = filesInfo;
+    filesInfo.startHour = HourlyTimestamp::ReadLastIndex(filesInfo.index, filesInfo.data);
+    if(filesInfo.startHour == -1)
+    {
+        m_LastError = "Index file "+sensor+".index is corrupt.";
+        return nullptr;
+    }
+    if(filesInfo.startHour == -2)
+    {
+        m_LastError = "Data file "+sensor+".data is corrupt.";
+        return nullptr;
+    }
 
+    m_FilesInfo[sensor] = filesInfo;
     return &(m_FilesInfo[sensor]);
 }
 
@@ -160,29 +165,78 @@ void HourlyTimestamp::ToTimeStruct(struct tm* tmHour, LightTSDB::HourlyTimestamp
     tmHour->tm_sec  = 0;
 }
 
-time_t HourlyTimestamp::ReadLastIndex(std::fstream* pFile)
+time_t HourlyTimestamp::ReadLastIndex(std::fstream* pIndexFile, std::fstream* pDataFile)
 {
     streampos pos;
 
-    pFile->seekg(0, std::ios::end);
-    pos = pFile->tellg();
+    pIndexFile->seekg(0, std::ios::end);
+    pos = pIndexFile->tellg();
     if(pos == 0) return 0;
 
-    LightTSDB::HourlyTimestamp_t hourlyTimestamp;
-    struct tm tmLast;
+    LightTSDB::HourlyTimestamp_t hourIndex;
 
-    pos -= (sizeof(hourlyTimestamp)+sizeof(streampos));
-    pFile->seekg(pos, std::ios::beg);
-    pFile->read(reinterpret_cast<char *>(&hourlyTimestamp), sizeof(hourlyTimestamp));
-    pFile->seekg(0, std::ios::end);
-    ToTimeStruct(&tmLast, hourlyTimestamp);
+    pos -= (sizeof(hourIndex)+sizeof(streampos));
+    pIndexFile->seekg(pos, std::ios::beg);
+    hourIndex = HourlyTimestamp::Read(pIndexFile);
+    pos = StreamOffset::Read(pIndexFile);
+    pIndexFile->seekg(0, std::ios::end);
+
+    int ret = VerifyDataHourlyTimestamp(hourIndex, pos, pDataFile);
+    if(ret<0) return ret;
+
+    struct tm tmLast;
+    ToTimeStruct(&tmLast, hourIndex);
     return mktime(&tmLast);
+}
+
+int HourlyTimestamp::VerifyDataHourlyTimestamp(LightTSDB::HourlyTimestamp_t hourIndex, streampos pos, fstream *pDataFile)
+{
+    LightTSDB::HourlyTimestamp_t hourData;
+
+    pDataFile->seekg(pos, std::ios::beg);
+    hourData = HourlyTimestamp::Read(pDataFile);
+    if(hourData!=hourIndex) return -1;
+
+    LightTSDB::HourlyOffset_t offset;
+    LightTSDB::HourlyOffset_t offsetMax = 0;
+    float value;
+
+    while(HourlyOffset::Read(pDataFile, &offset, &value)==true)
+    {
+        if(offset==LightTSDB::ENDLINE) break;
+        offsetMax = offset;
+    }
+
+    struct tm tmp;
+    time_t tMax;
+    time_t tCur;
+
+    ToTimeStruct(&tmp, hourData);
+    tMax = mktime(&tmp);
+    tMax += offsetMax;
+
+    time(&tCur);
+    gmtime_r(&tCur, &tmp);
+    tCur = mktime(&tmp);
+
+    if(tMax>tCur) return -2;
+
+    pDataFile->seekg(0, std::ios::end);
+    return 0;
 }
 
 bool HourlyTimestamp::Write(LightTSDB::HourlyTimestamp_t hourlyTimestamp, std::fstream* pFile)
 {
     pFile->write(reinterpret_cast<const char *>(&hourlyTimestamp), sizeof(hourlyTimestamp));
     return pFile->good();
+}
+
+LightTSDB::HourlyTimestamp_t HourlyTimestamp::Read(std::fstream* pFile)
+{
+    LightTSDB::HourlyTimestamp_t hourlyTimestamp;
+
+    pFile->read(reinterpret_cast<char *>(&hourlyTimestamp), sizeof(hourlyTimestamp));
+    return hourlyTimestamp;
 }
 
 std::string HourlyTimestamp::ToString(LightTSDB::HourlyTimestamp_t hourlyTimestamp)
@@ -213,4 +267,30 @@ streampos StreamOffset::Read(fstream* pIndexFile)
 
     pIndexFile->read(reinterpret_cast<char *>(&pos), sizeof(pos));
     return pos;
+}
+
+/**************************************************************************************************************/
+/***                                                                                                        ***/
+/*** Class HourlyOffset                                                                                     ***/
+/***                                                                                                        ***/
+/**************************************************************************************************************/
+bool HourlyOffset::Read(std::fstream* pDataFile, LightTSDB::HourlyOffset_t* offset, float* value)
+{
+    pDataFile->read(reinterpret_cast<char *>(offset), sizeof(LightTSDB::HourlyOffset_t));
+    if(*offset==LightTSDB::ENDLINE) return true;
+    pDataFile->read(reinterpret_cast<char *>(value), sizeof(float));
+    return pDataFile->good();
+}
+
+bool HourlyOffset::Write(std::fstream* pDataFile, LightTSDB::HourlyOffset_t offset, float value)
+{
+    pDataFile->write(reinterpret_cast<const char *>(&offset), sizeof(LightTSDB::HourlyOffset_t));
+    pDataFile->write(reinterpret_cast<const char *>(&value), sizeof(float));
+    return pDataFile->good();
+}
+
+bool HourlyOffset::WriteEndLine(std::fstream* pDataFile)
+{
+    pDataFile->write(reinterpret_cast<const char *>(&LightTSDB::ENDLINE), sizeof(LightTSDB::ENDLINE));
+    return pDataFile->good();
 }

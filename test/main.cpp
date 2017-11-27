@@ -6,8 +6,14 @@
 
 using namespace std;
 
-//Verify hourlyTimestamp coherence between index and data files (must be equal)
-//Verify hourlyTimestamp coherence between index file and current time (must be lower or equal)
+//Add Header : Signature, Version, State and Type on index and data files
+//Add uvw (wrapper for libuv)
+//Add compression
+//Add Wrtie Cache and Flush ?
+//Add Read Cache ?
+//Add read functions
+//Tool for check data file
+//Tool for rebuild index file
 
 int main()
 {
