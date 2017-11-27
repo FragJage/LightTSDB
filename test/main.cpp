@@ -29,7 +29,7 @@ int main()
     SetMockTime(2017, 10, 25, 12, 10, 42);
 
     auto t0 = chrono::high_resolution_clock::now();
-    for(i=0; i<1000000; i++)
+    for(i=0; i<100000; i++)
     {
         MockAddSecond(rdSecond(gen));
         myTemp += rdTemperature(gen);

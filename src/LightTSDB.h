@@ -71,8 +71,15 @@
 
 #include <string>
 #include <map>
-#include <fstream>
 #include <ctime>
+#ifdef HAVE_LIBUV
+    #include "uvw.hpp"
+    typedef uv_fs_t ltsdb_fs_t;
+#else
+    #include <fstream>
+    typedef std::fstream* ltsdb_fs_t;
+#endif
+
 
 /// \brief    Light time series class.
 /// \details  This class store time series into the file system and can read float values by hours.
@@ -102,8 +109,8 @@ class LightTSDB
     private:
         struct FilesInfo
         {
-            std::fstream* data;
-            std::fstream* index;
+            ltsdb_fs_t data;
+            ltsdb_fs_t index;
             std::time_t startHour;
         };
 
@@ -112,6 +119,7 @@ class LightTSDB
         friend class HourlyTimestamp;
         friend class StreamOffset;
         friend class HourlyOffset;
+        friend class FileAbstract;
 
         FilesInfo* getFilesInfo(std::string sensor);
 
@@ -148,6 +156,15 @@ class HourlyOffset
         static bool Read(std::fstream* pDataFile, LightTSDB::HourlyOffset_t* offset, float* value);
         static bool Write(std::fstream* pDataFile, LightTSDB::HourlyOffset_t offset, float value);
         static bool WriteEndLine(std::fstream* pDataFile);
+};
+
+class FileAbstract
+{
+    public:
+        static ltsdb_fs_t NewHandle();
+        static void DeleteHandle(ltsdb_fs_t hfs);
+        static bool Open(ltsdb_fs_t hfs, std::string fileName);
+        static void Close(ltsdb_fs_t hfs);
 };
 
 #endif // LIGHTTSDB_H

@@ -294,3 +294,56 @@ bool HourlyOffset::WriteEndLine(std::fstream* pDataFile)
     pDataFile->write(reinterpret_cast<const char *>(&LightTSDB::ENDLINE), sizeof(LightTSDB::ENDLINE));
     return pDataFile->good();
 }
+
+/**************************************************************************************************************/
+/***                                                                                                        ***/
+/*** Class FileAbstract                                                                                     ***/
+/***                                                                                                        ***/
+/**************************************************************************************************************/
+#ifdef HAVE_LIBUV
+ltsdb_fs_t FileAbstract::NewHandle()
+{
+    auto loop = uvw::Loop::getDefault();
+    return loop->resource<uvw::FileReq>();
+}
+
+void DeleteHandle(ltsdb_fs_t hfs)
+{
+}
+
+bool Open(ltsdb_fs_t hfs, std::string fileName)
+{
+    return hfs->openSync(fileName, O_CREAT | O_APPEND | O_RDWR, 0644);
+}
+
+void Close(ltsdb_fs_t hfs)
+{
+    hfs->closeSync();
+}
+#else
+ltsdb_fs_t FileAbstract::NewHandle()
+{
+    return new fstream();
+}
+
+void DeleteHandle(ltsdb_fs_t hfs)
+{
+    delete hfs;
+}
+
+bool Open(ltsdb_fs_t hfs, std::string fileName)
+{
+    hfs->open(fileName, fstream::binary | fstream::out | fstream::in | fstream::app);
+    if(!(*hfs))
+    {
+        m_LastError = strerror(errno);
+        return false;
+    }
+    return true;
+}
+
+void Close(ltsdb_fs_t hfs)
+{
+    hfs->close();
+}
+#endif
