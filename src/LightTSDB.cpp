@@ -22,6 +22,7 @@
 
 
 #include <cstring>      //for strerror
+#include <sstream>
 #include "LightTSDB.h"
 
 using namespace std;
@@ -55,7 +56,7 @@ LightTSDB::~LightTSDB()
 bool LightTSDB::WriteValue(string sensor, float value)
 {
     FilesInfo* filesInfo;
-    short delay;
+    HourlyOffset_t delay;
     time_t now;
     struct tm tmNow;
 
@@ -63,10 +64,8 @@ bool LightTSDB::WriteValue(string sensor, float value)
     if(filesInfo == nullptr) return false;
 
     time(&now);
-cout << "NowAv" << now << endl;
     gmtime_r(&now, &tmNow);
     now = mktime(&tmNow);
-cout << "NowAp" << now << endl;
 
     if(difftime(now, filesInfo->startHour)>3599)
     {
@@ -76,17 +75,14 @@ cout << "NowAp" << now << endl;
         tmNow.tm_sec = 0;
         filesInfo->startHour = mktime(&tmNow);
 
-cout << "Write timestamp" << endl;
         HourlyTimestamp_t hourlyTimestamp = HourlyTimestamp::FromTimeStruct(&tmNow);
         HourlyTimestamp::Write(hourlyTimestamp, filesInfo->index);
-        StreamOffset::Write(filesInfo->data->tellg(), filesInfo->index);
+        StreamOffset::Write(filesInfo->data, filesInfo->index);
         HourlyTimestamp::Write(hourlyTimestamp, filesInfo->data);
     }
 
     delay = difftime(now, filesInfo->startHour);
-cout << "Write offset : " << delay << endl;
     filesInfo->data->write(reinterpret_cast<const char *>(&delay), sizeof(delay));
-cout << "Write float" << endl;
     filesInfo->data->write(reinterpret_cast<const char *>(&value), sizeof(value));
 
     return true;
@@ -162,33 +158,24 @@ void HourlyTimestamp::ToTimeStruct(struct tm* tmHour, LightTSDB::HourlyTimestamp
     tmHour->tm_hour = (int) tmpBuffer[3];
     tmHour->tm_min  = 0;
     tmHour->tm_sec  = 0;
-
-cout << "Year" << (int) tmpBuffer[0] << endl;
-cout << "Mon" << (int) tmpBuffer[1] << endl;
-cout << "Day" << (int) tmpBuffer[2] << endl;
-cout << "Hour" << (int) tmpBuffer[3] << endl;
-
 }
 
 time_t HourlyTimestamp::ReadLastIndex(std::fstream* pFile)
 {
-/*
+    streampos pos;
+
     pFile->seekg(0, std::ios::end);
-cout << "pos " << pFile->tellg() << endl;
-    if(pFile->tellg() == 0) return 0;
-*/
+    pos = pFile->tellg();
+    if(pos == 0) return 0;
+
     LightTSDB::HourlyTimestamp_t hourlyTimestamp;
     struct tm tmLast;
-/*
-cout << "decal " << (sizeof(hourlyTimestamp)+sizeof(streampos)) << endl;
-    pFile->seekg(-(sizeof(hourlyTimestamp)+sizeof(streampos)-1), std::ios::end);
-cout << "pos " << pFile->tellg() << endl;
-*/
+
+    pos -= (sizeof(hourlyTimestamp)+sizeof(streampos));
+    pFile->seekg(pos, std::ios::beg);
     pFile->read(reinterpret_cast<char *>(&hourlyTimestamp), sizeof(hourlyTimestamp));
-cout << "hTS " << hourlyTimestamp << endl;
     pFile->seekg(0, std::ios::end);
     ToTimeStruct(&tmLast, hourlyTimestamp);
-cout << "NowLu" << mktime(&tmLast) << endl;
     return mktime(&tmLast);
 }
 
@@ -198,13 +185,32 @@ bool HourlyTimestamp::Write(LightTSDB::HourlyTimestamp_t hourlyTimestamp, std::f
     return pFile->good();
 }
 
+std::string HourlyTimestamp::ToString(LightTSDB::HourlyTimestamp_t hourlyTimestamp)
+{
+    char* tmpBuffer=reinterpret_cast<char *>(&hourlyTimestamp);
+    ostringstream oss;
+
+    oss << 1900+(int) tmpBuffer[0] << "/" << 1+(int) tmpBuffer[1] << "/" << (int) tmpBuffer[2] << " " << (int) tmpBuffer[3] << "h";
+    return oss.str();
+}
+
 /**************************************************************************************************************/
 /***                                                                                                        ***/
 /*** Class StreamOffset                                                                                     ***/
 /***                                                                                                        ***/
 /**************************************************************************************************************/
-bool StreamOffset::Write(streampos pos, fstream* pFile)
+bool StreamOffset::Write(fstream* pDataFile, fstream* pIndexFile)
 {
-    pFile->write(reinterpret_cast<const char *>(&pos), sizeof(pos));
-    return pFile->good();
+    pDataFile->seekg(0, std::ios::end);
+    streampos pos = pDataFile->tellg();
+    pIndexFile->write(reinterpret_cast<const char *>(&pos), sizeof(pos));
+    return pIndexFile->good();
+}
+
+streampos StreamOffset::Read(fstream* pIndexFile)
+{
+    streampos pos;
+
+    pIndexFile->read(reinterpret_cast<char *>(&pos), sizeof(pos));
+    return pos;
 }

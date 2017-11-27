@@ -129,12 +129,14 @@ class HourlyTimestamp
         static void ToTimeStruct(struct tm* tmHour, LightTSDB::HourlyTimestamp_t hourlyTimestamp);
         static std::time_t ReadLastIndex(std::fstream* pFile);
         static bool Write(LightTSDB::HourlyTimestamp_t hourlyTimestamp, std::fstream* pFile);
+        static std::string ToString(LightTSDB::HourlyTimestamp_t hourlyTimestamp);
 };
 
 class StreamOffset
 {
     public:
-        static bool Write(std::streampos pos, std::fstream* pFile);
+        static bool Write(std::fstream* pDataFile, std::fstream* pIndexFile);
+        static std::streampos Read(std::fstream* pIndexFile);
 };
 
 #endif // LIGHTTSDB_H
