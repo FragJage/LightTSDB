@@ -46,6 +46,8 @@
 		</Linker>
 		<Unit filename="src/LightTSDB.cpp" />
 		<Unit filename="src/LightTSDB.h" />
+		<Unit filename="test/TimeMock.cpp" />
+		<Unit filename="test/TimeMock.h" />
 		<Unit filename="test/main.cpp" />
 		<Extensions>
 			<code_completion />
