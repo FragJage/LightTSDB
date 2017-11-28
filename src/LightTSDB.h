@@ -1,6 +1,6 @@
 /*** LICENCE ***************************************************************************************/
 /*
-  LightTSDB - Simple class for configuration file like .ini
+  LightTSDB - Light time series database
 
   This file is part of LightTSDB.
 
@@ -50,9 +50,9 @@
 ///
 /// int main()
 /// {
-///     LightTSDB myTSDB;
+///     LightTSDB::LightTSDB myTSDB;
 ///
-///     myTSDB.WriteValue("LucileBedRoom", 24.8);
+///     myTSDB.WriteValue("TomBedRoomTemperature", 24.8);
 ///     myTSDB.Flush();
 ///
 ///     return 0;
@@ -74,18 +74,62 @@
 #include <ctime>
 #ifdef HAVE_LIBUV
     #include "uvw.hpp"
-    typedef uv_fs_t ltsdb_fs_t;
 #else
     #include <fstream>
-    typedef std::fstream* ltsdb_fs_t;
 #endif
 
+namespace LightTSDB {
 
-/// \brief    Light time series class.
+#ifdef HAVE_LIBUV
+    typedef uv_fs_t ltsdb_fs_t;
+#else
+    typedef std::fstream ltsdb_fs_t;
+#endif
+
+typedef uint32_t HourlyTimestamp_t;
+typedef uint16_t HourlyOffset_t;
+enum class FileState { Stable, Busy };
+enum class FileType { Float };
+
+static const std::string SIGNATURE = "LTSDB";
+static const uint8_t VERSION = 1;
+static const uint16_t ENDLINE = 0XFFFE;
+
+class LtsdbFile
+{
+    public:
+        LtsdbFile();
+        ~LtsdbFile();
+        bool Open(const std::string& fileName);
+        void Close();
+        void Seekg(std::streamoff off, std::ios_base::seekdir way);
+        std::streampos Tellp();
+        std::streampos Tellg();
+        bool WriteStreamOffset(std::streampos pos);
+        std::streampos ReadStreamOffset();
+        bool WriteHourlyTimestamp(HourlyTimestamp_t hourlyTimestamp);
+        HourlyTimestamp_t ReadHourlyTimestamp();
+        bool ReadHourlyOffset(HourlyOffset_t* offset, float* value);
+        bool WriteHourlyOffset(HourlyOffset_t offset, float value);
+        bool WriteHourlyOffsetEndLine();
+        static bool FileExists(const std::string& fileName);
+
+    private:
+        ltsdb_fs_t m_InternalFile;
+};
+
+/// \brief    Light time series database class.
 /// \details  This class store time series into the file system and can read float values by hours.
 class LightTSDB
 {
     public:
+        struct ErrorInfo
+        {
+            std::string Code;
+            std::string ErrMessage;
+            std::string SysMessage;
+        };
+
         /// \brief    Constructor of LightTSDB
         /// \details  Constructor of LightTSDB.
         LightTSDB();
@@ -95,76 +139,54 @@ class LightTSDB
         ~LightTSDB();
 
         /// \brief    Write value into LightTSDB
-        /// \details  Add a new value of a sensor into LightTSDB.
+        /// \details  Add a new value of a sensor into LightTSDB at current time.
         /// \param    sensor       Name of sensor
         /// \param    value        Value of sensor
         /// \return   Iterator on the first key in the section
-        bool WriteValue(std::string sensor, float value);
+        bool WriteValue(const std::string& sensor, float value);
 
         /// \brief    Get last error
-        /// \details  Get the last error message.
-        /// \return   Error message string
-        std::string GetLastError();
+        /// \details  Get the last error.
+        /// \return   Error message and error code
+        ErrorInfo GetLastError(const std::string& sensor);
 
     private:
         struct FilesInfo
         {
-            ltsdb_fs_t data;
-            ltsdb_fs_t index;
+            FilesInfo() : data(nullptr), index(nullptr), startHour(0), sensor() {}
+            FilesInfo(std::string sensor) : data(nullptr), index(nullptr), startHour(0), sensor(sensor) {}
+            LtsdbFile* data;
+            LtsdbFile* index;
             std::time_t startHour;
+            std::string sensor;
         };
 
-        typedef uint32_t HourlyTimestamp_t;
-        typedef uint16_t HourlyOffset_t;
-        friend class HourlyTimestamp;
-        friend class StreamOffset;
-        friend class HourlyOffset;
-        friend class FileAbstract;
+        enum FileNameType { data, index };
 
-        FilesInfo* getFilesInfo(std::string sensor);
+        FilesInfo* getFilesInfo(const std::string& sensor);
+        std::string getFileName(const std::string& sensor, FileNameType fileNameType);
+        bool openFiles(FilesInfo& filesInfo);
+        bool createFiles(FilesInfo& filesInfo);
+        bool writeHeaders(FilesInfo& filesInfo);
+        bool checkHeaders(FilesInfo& filesInfo);
+        void cleanUp(FilesInfo* pFileInfo);
+        void setLastError(const std::string& sensor, const std::string& code, const std::string& errMessage, const std::string& sysMessage="");
 
         std::string m_Folder;
-        std::string m_LastError;
+        std::map<std::string, ErrorInfo> m_LastError;
         std::map<std::string, FilesInfo> m_FilesInfo;
-
-        static const short ENDLINE;
 };
 
 class HourlyTimestamp
 {
     public:
-        static LightTSDB::HourlyTimestamp_t FromTimeStruct(struct tm* tmHour);
-        static void ToTimeStruct(struct tm* tmHour, LightTSDB::HourlyTimestamp_t hourlyTimestamp);
-        static std::time_t ReadLastIndex(std::fstream* pIndexFile, std::fstream* pDataFile);
-        static bool Write(LightTSDB::HourlyTimestamp_t hourlyTimestamp, std::fstream* pFile);
-        static LightTSDB::HourlyTimestamp_t Read(std::fstream* pFile);
-        static std::string ToString(LightTSDB::HourlyTimestamp_t hourlyTimestamp);
+        static HourlyTimestamp_t FromTimeStruct(struct tm* tmHour);
+        static void ToTimeStruct(struct tm* tmHour, HourlyTimestamp_t hourlyTimestamp);
+        static std::time_t ReadLastIndex(LtsdbFile* pIndexFile, LtsdbFile* pDataFile);
+        static std::string ToString(HourlyTimestamp_t hourlyTimestamp);
     private:
-        static int VerifyDataHourlyTimestamp(LightTSDB::HourlyTimestamp_t hourIndex, std::streampos pos, std::fstream *pDataFile);
+        static int VerifyDataHourlyTimestamp(HourlyTimestamp_t hourIndex, std::streampos pos, LtsdbFile* pDataFile);
 };
 
-class StreamOffset
-{
-    public:
-        static bool Write(std::fstream* pDataFile, std::fstream* pIndexFile);
-        static std::streampos Read(std::fstream* pIndexFile);
-};
-
-class HourlyOffset
-{
-    public:
-        static bool Read(std::fstream* pDataFile, LightTSDB::HourlyOffset_t* offset, float* value);
-        static bool Write(std::fstream* pDataFile, LightTSDB::HourlyOffset_t offset, float value);
-        static bool WriteEndLine(std::fstream* pDataFile);
-};
-
-class FileAbstract
-{
-    public:
-        static ltsdb_fs_t NewHandle();
-        static void DeleteHandle(ltsdb_fs_t hfs);
-        static bool Open(ltsdb_fs_t hfs, std::string fileName);
-        static void Close(ltsdb_fs_t hfs);
-};
-
+}
 #endif // LIGHTTSDB_H

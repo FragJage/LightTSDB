@@ -6,7 +6,7 @@
 
 using namespace std;
 
-//Add Header : Signature, Version, State and Type on index and data files
+//Add Header : Signature, Version, Type and State on index and data files
 //Add uvw (wrapper for libuv)
 //Add compression
 //Add Wrtie Cache and Flush ?
@@ -17,8 +17,9 @@ using namespace std;
 
 int main()
 {
+    string sensor = "LucileBedRoomTemperature";
     int i;
-    LightTSDB myTSDB;
+    LightTSDB::LightTSDB myTSDB;
     float myTemp = 21.0;
     random_device rd;
     mt19937 gen(rd());
@@ -29,13 +30,13 @@ int main()
     SetMockTime(2017, 10, 25, 12, 10, 42);
 
     auto t0 = chrono::high_resolution_clock::now();
-    for(i=0; i<100000; i++)
+    for(i=0; i<10; i++)
     {
         MockAddSecond(rdSecond(gen));
         myTemp += rdTemperature(gen);
-        if(!myTSDB.WriteValue("LucileBedRoomTemperature", myTemp))
+        if(!myTSDB.WriteValue(sensor, myTemp))
         {
-            cout << "Failed to write : " << myTSDB.GetLastError() << endl;
+            cout << "Failed to write : " << myTSDB.GetLastError(sensor).ErrMessage << endl;
             break;
         }
     }
