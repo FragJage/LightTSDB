@@ -146,21 +146,47 @@ string LightTSDB::getFileName(const string& sensor, LightTSDB::FileNameType file
 
 bool LightTSDB::openFiles(LightTSDB::FilesInfo& filesInfo)
 {
+    string signature;
+    uint8_t version;
+    uint8_t fileType;
+    uint8_t option;
+    uint8_t fileState;
+
     filesInfo.data = new LtsdbFile();
     if(!filesInfo.data->Open(getFileName(filesInfo.sensor, data)))
     {
-        setLastError(filesInfo.sensor, "OPEN1", "Unable to open data file.", strerror(errno));
+        setLastError(filesInfo.sensor, "OPEN_DAT2", "Unable to open data file.", strerror(errno));
+        return false;
+    }
+    filesInfo.data->ReadHeader(signature, &version, &fileType, &option, &fileState);
+    if(signature!=SIGNATURE)
+    {
+        setLastError(filesInfo.sensor, "OPEN_DAT2", "It's not a LightTSDB data file.");
+        return false;
+    }
+    if(version!=VERSION)
+    {
+        setLastError(filesInfo.sensor, "OPEN_DAT3", "Unable to read this version of data file.");
         return false;
     }
 
     filesInfo.index = new LtsdbFile();
     if(!filesInfo.index->Open(getFileName(filesInfo.sensor, index)))
     {
-        setLastError(filesInfo.sensor, "OPEN2", "Unable to open index file.", strerror(errno));
+        setLastError(filesInfo.sensor, "OPEN_NDX1", "Unable to open index file.", strerror(errno));
         return false;
     }
-
-    if(!checkHeaders(filesInfo)) return false;
+    filesInfo.index->ReadHeader(signature, &version, &fileType, &option, &fileState);
+    if(signature!=SIGNATURE)
+    {
+        setLastError(filesInfo.sensor, "OPEN_NDX2", "It's not a LightTSDB index file.");
+        return false;
+    }
+    if(version!=VERSION)
+    {
+        setLastError(filesInfo.sensor, "OPEN_NDX3", "Unable to read this version of index file.");
+        return false;
+    }
 
     return true;
 }
@@ -170,29 +196,27 @@ bool LightTSDB::createFiles(LightTSDB::FilesInfo& filesInfo)
     filesInfo.data = new LtsdbFile();
     if(!filesInfo.data->Open(getFileName(filesInfo.sensor, data)))
     {
-        setLastError(filesInfo.sensor, "CREATE1", "Unable to create data file.", strerror(errno));
+        setLastError(filesInfo.sensor, "CREATE_DAT1", "Unable to create data file.", strerror(errno));
+        return false;
+    }
+    if(!filesInfo.data->WriteHeader(SIGNATURE, VERSION, static_cast<uint8_t>(FileType::Float), 0, static_cast<uint8_t>(FileState::Stable)))
+    {
+        setLastError(filesInfo.sensor, "CREATE_DAT2", "Unable to write header of data file.", strerror(errno));
         return false;
     }
 
     filesInfo.index = new LtsdbFile();
     if(!filesInfo.index->Open(getFileName(filesInfo.sensor, index)))
     {
-        setLastError(filesInfo.sensor, "CREATE2", "Unable to create index file.", strerror(errno));
+        setLastError(filesInfo.sensor, "CREATE_NDX1", "Unable to create index file.", strerror(errno));
+        return false;
+    }
+    if(!filesInfo.index->WriteHeader(SIGNATURE, VERSION, static_cast<uint8_t>(FileType::Float), 0, static_cast<uint8_t>(FileState::Stable)))
+    {
+        setLastError(filesInfo.sensor, "CREATE_NDX2", "Unable to write header of index file.", strerror(errno));
         return false;
     }
 
-    if(!writeHeaders(filesInfo)) return false;
-
-    return true;
-}
-
-bool LightTSDB::writeHeaders(LightTSDB::FilesInfo& filesInfo)
-{
-    return true;
-}
-
-bool LightTSDB::checkHeaders(LightTSDB::FilesInfo& filesInfo)
-{
     return true;
 }
 
@@ -445,6 +469,32 @@ bool LtsdbFile::WriteHourlyOffsetEndLine()
     return m_InternalFile.good();
 }
 
+bool LtsdbFile::ReadHeader(std::string signature, uint8_t* version, uint8_t* type, uint8_t* options, uint8_t* state)
+{
+    int sigSize = strlen(SIGNATURE);
+    char* charsig = new char[sigSize+1];
+
+    m_InternalFile.read(charsig, sigSize);
+    m_InternalFile.read(reinterpret_cast<char *>(version), sizeof(uint8_t));
+    m_InternalFile.read(reinterpret_cast<char *>(type), sizeof(uint8_t));
+    m_InternalFile.read(reinterpret_cast<char *>(options), sizeof(uint8_t));
+    m_InternalFile.read(reinterpret_cast<char *>(state), sizeof(uint8_t));
+
+    signature = charsig;
+
+    return m_InternalFile.good();
+}
+
+bool LtsdbFile::WriteHeader(const char* signature, const uint8_t version, const uint8_t type, const uint8_t options, const uint8_t state)
+{
+    m_InternalFile.write(signature, strlen(signature));
+    m_InternalFile.write(reinterpret_cast<const char *>(&version), sizeof(uint8_t));
+    m_InternalFile.write(reinterpret_cast<const char *>(&type), sizeof(uint8_t));
+    m_InternalFile.write(reinterpret_cast<const char *>(&options), sizeof(uint8_t));
+    m_InternalFile.write(reinterpret_cast<const char *>(&state), sizeof(uint8_t));
+    return m_InternalFile.good();
+}
+
 bool LtsdbFile::FileExists(const string& fileName)
 {
     if (FILE *file = fopen(fileName.c_str(), "r"))
@@ -454,5 +504,6 @@ bool LtsdbFile::FileExists(const string& fileName)
     }
     return false;
 }
+
 #endif
 }

@@ -91,7 +91,7 @@ typedef uint16_t HourlyOffset_t;
 enum class FileState { Stable, Busy };
 enum class FileType { Float };
 
-static const std::string SIGNATURE = "LTSDB";
+static const char* SIGNATURE = "LTSDB";
 static const uint8_t VERSION = 1;
 static const uint16_t ENDLINE = 0XFFFE;
 
@@ -112,8 +112,9 @@ class LtsdbFile
         bool ReadHourlyOffset(HourlyOffset_t* offset, float* value);
         bool WriteHourlyOffset(HourlyOffset_t offset, float value);
         bool WriteHourlyOffsetEndLine();
+        bool ReadHeader(std::string signature, uint8_t* version, uint8_t* type, uint8_t* options, uint8_t* state);
+        bool WriteHeader(const char* signature, const uint8_t version, const uint8_t type, const uint8_t options, const uint8_t state);
         static bool FileExists(const std::string& fileName);
-
     private:
         ltsdb_fs_t m_InternalFile;
 };
@@ -167,8 +168,6 @@ class LightTSDB
         std::string getFileName(const std::string& sensor, FileNameType fileNameType);
         bool openFiles(FilesInfo& filesInfo);
         bool createFiles(FilesInfo& filesInfo);
-        bool writeHeaders(FilesInfo& filesInfo);
-        bool checkHeaders(FilesInfo& filesInfo);
         void cleanUp(FilesInfo* pFileInfo);
         void setLastError(const std::string& sensor, const std::string& code, const std::string& errMessage, const std::string& sysMessage="");
 
