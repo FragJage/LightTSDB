@@ -60,28 +60,32 @@ bool LightTSDB::WriteValue(const string& sensor, float value)
     time_t now;
     struct tm tmNow;
 
+
     filesInfo = getFilesInfo(sensor);
     if(filesInfo == nullptr) return false;
 
     time(&now);
-    gmtime_r(&now, &tmNow);
-    now = mktime(&tmNow);
 
     if(difftime(now, filesInfo->startHour)>3599)
     {
         if(filesInfo->startHour>0) filesInfo->data->WriteEndLine();
 
+        localtime_r(&now, &tmNow);
+        filesInfo->startHour = now - tmNow.tm_min*60 - tmNow.tm_sec;
         tmNow.tm_min = 0;
         tmNow.tm_sec = 0;
-        filesInfo->startHour = mktime(&tmNow);
 
         HourlyTimestamp_t hourlyTimestamp = HourlyTimestamp::FromTimeStruct(&tmNow);
         filesInfo->index->WriteHourlyTimestamp(hourlyTimestamp);
+cout << "Data file write time " << HourlyTimestamp::ToString(hourlyTimestamp) << " = " << filesInfo->startHour << " = " << mktime(&tmNow) << endl;
         filesInfo->index->WriteStreamOffset(filesInfo->data->Tellp());
         filesInfo->data->WriteHourlyTimestamp(hourlyTimestamp);
+HourlyTimestamp::ToTimeStruct(&tmNow, hourlyTimestamp);
+cout << "Retour " << mktime(&tmNow) << endl;
     }
 
     HourlyOffset_t offset = difftime(now, filesInfo->startHour);
+///cout << offset << " ";
     filesInfo->data->WriteValue(offset, value);
 
     return true;
@@ -370,7 +374,6 @@ void HourlyTimestamp::ToTimeStruct(struct tm* tmHour, HourlyTimestamp_t hourlyTi
     tmHour->tm_hour = (int) tmpBuffer[3];
     tmHour->tm_min  = 0;
     tmHour->tm_sec  = 0;
-    tmHour->tm_isdst = 0;
 }
 
 time_t HourlyTimestamp::ReadLastIndex(LtsdbFile* pIndexFile, LtsdbFile* pDataFile)
@@ -401,7 +404,6 @@ int HourlyTimestamp::VerifyDataHourlyTimestamp(HourlyTimestamp_t hourIndex, stre
 
     pDataFile->Seekg(pos, std::ios::beg);
     hourData = pDataFile->ReadHourlyTimestamp();
-cout << "Data time " << HourlyTimestamp::ToString(hourData) << endl;
     if(hourData!=hourIndex) return -1;
 
     HourlyOffset_t offset;
@@ -420,6 +422,7 @@ cout << "Data time " << HourlyTimestamp::ToString(hourData) << endl;
 
     ToTimeStruct(&tmp, hourData);
     tMax = mktime(&tmp);
+cout << "Data file read time " << HourlyTimestamp::ToString(hourData) << " = " << tMax << endl;
     tMax += offsetMax;
 
     time(&tCur);

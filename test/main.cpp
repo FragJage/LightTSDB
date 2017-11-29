@@ -33,7 +33,7 @@ int main()
     nb = 0;
     for(j=0; j<3; j++)
     {
-        for(i=0; i<3; i++)
+        for(i=0; i<150; i++)
         {
             MockAddSecond(rdSecond(gen));
             myTemp += rdTemperature(gen);
