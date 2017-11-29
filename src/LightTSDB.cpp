@@ -20,7 +20,6 @@
 /***************************************************************************************************/
 #include <iostream>
 
-
 #include <cstring>      //for strerror
 #include <sstream>
 #include "LightTSDB.h"
@@ -50,6 +49,11 @@ LightTSDB::~LightTSDB()
     }
 }
 
+void LightTSDB::SetFolder(const string& folder)
+{
+    m_Folder = folder;
+}
+
 bool LightTSDB::WriteValue(const string& sensor, float value)
 {
     FilesInfo* filesInfo;
@@ -65,7 +69,7 @@ bool LightTSDB::WriteValue(const string& sensor, float value)
 
     if(difftime(now, filesInfo->startHour)>3599)
     {
-        if(filesInfo->startHour>0) filesInfo->data->WriteHourlyOffsetEndLine();
+        if(filesInfo->startHour>0) filesInfo->data->WriteEndLine();
 
         tmNow.tm_min = 0;
         tmNow.tm_sec = 0;
@@ -78,9 +82,38 @@ bool LightTSDB::WriteValue(const string& sensor, float value)
     }
 
     HourlyOffset_t offset = difftime(now, filesInfo->startHour);
-    filesInfo->data->WriteHourlyOffset(offset, value);
+    filesInfo->data->WriteValue(offset, value);
 
     return true;
+}
+
+bool LightTSDB::Close(const std::string& sensor)
+{
+    map<string,FilesInfo>::iterator it = m_FilesInfo.find(sensor);
+    if(it == m_FilesInfo.end()) return false;
+
+    cleanUp(&(it->second));
+    m_FilesInfo.erase(it);
+    return true;
+}
+
+bool LightTSDB::Remove(const std::string& sensor)
+{
+    bool ret = true;
+
+    Close(sensor);
+    if(remove(getFileName(sensor, FileType::index).c_str())!=0)
+    {
+        setLastError(sensor, "REMOVE_NDX", "Unable to remove LightTSDB index file.", strerror(errno));
+        ret = false;
+    }
+    if(remove(getFileName(sensor, FileType::data).c_str())!=0)
+    {
+        setLastError(sensor, "REMOVE_DAT", "Unable to remove LightTSDB data file.", strerror(errno));
+        ret = false;
+    }
+
+    return ret;
 }
 
 LightTSDB::FilesInfo* LightTSDB::getFilesInfo(const string& sensor)
@@ -107,87 +140,101 @@ LightTSDB::FilesInfo* LightTSDB::getFilesInfo(const string& sensor)
         }
     }
 
-    filesInfo.startHour = HourlyTimestamp::ReadLastIndex(filesInfo.index, filesInfo.data);
-    if(filesInfo.startHour == -1)
-    {
-        cleanUp(&filesInfo);
-        setLastError(sensor, "COR1", "Index file is corrupt.");
-        return nullptr;
-    }
-    if(filesInfo.startHour == -2)
-    {
-        cleanUp(&filesInfo);
-        setLastError(sensor, "COR2", "Data file is corrupt.");
-        return nullptr;
-    }
-
     m_FilesInfo[sensor] = filesInfo;
     return &(m_FilesInfo[sensor]);
 }
 
-string LightTSDB::getFileName(const string& sensor, LightTSDB::FileNameType fileNameType)
+string LightTSDB::getFileName(const string& sensor, LightTSDB::FileType fileType)
 {
-    string ext;
+    ostringstream oss;
+    string ext = getFileExt(fileType);
+    if(ext!="") ext = "."+ext;
+    oss << m_Folder << "/" << sensor << ext;
+    return oss.str();
+}
 
-    switch(fileNameType)
+std::string LightTSDB::getFileExt(FileType fileType)
+{
+    switch(fileType)
     {
-        case data :
-            ext = ".data";
-            break;
-        case index :
-            ext = ".index";
-            break;
-        default :
-            ext = "";
+        case data : return "data";
+        case index : return "index";
+        default : return "";
     }
-
-    return m_Folder+"/"+sensor+ext;
 }
 
 bool LightTSDB::openFiles(LightTSDB::FilesInfo& filesInfo)
 {
+    if(!openDataFile(filesInfo)) return false;
+    if(!openIndexFile(filesInfo)) return false;
+
+    filesInfo.startHour = HourlyTimestamp::ReadLastIndex(filesInfo.index, filesInfo.data);
+    if(filesInfo.startHour == -1)
+    {
+        setLastError(filesInfo.sensor, "OPEN_COR1", "Index file is corrupt.");
+        return false;
+    }
+    if(filesInfo.startHour == -2)
+    {
+        setLastError(filesInfo.sensor, "OPEN_COR2", "Data file is corrupt.");
+        return false;
+    }
+
+    return true;
+}
+
+bool LightTSDB::openDataFile(FilesInfo& filesInfo)
+{
     string signature;
-    uint8_t version;
-    uint8_t fileType;
-    uint8_t option;
-    uint8_t fileState;
+    FileState fileState;
 
     filesInfo.data = new LtsdbFile();
-    if(!filesInfo.data->Open(getFileName(filesInfo.sensor, data)))
+    if(!filesInfo.data->Open(getFileName(filesInfo.sensor, FileType::data)))
     {
-        setLastError(filesInfo.sensor, "OPEN_DAT2", "Unable to open data file.", strerror(errno));
+        setLastError(filesInfo.sensor, "OPEN_DAT1", "Unable to open data file.", strerror(errno));
         return false;
     }
-    filesInfo.data->ReadHeader(signature, &version, &fileType, &option, &fileState);
-    if(signature!=SIGNATURE)
+    filesInfo.data->Seekg(0, std::ios::beg);
+    if(!filesInfo.data->ReadHeader(&signature, &(filesInfo.version), &(filesInfo.type), &(filesInfo.options), &fileState))
     {
-        setLastError(filesInfo.sensor, "OPEN_DAT2", "It's not a LightTSDB data file.");
+        setLastError(filesInfo.sensor, "OPEN_DAT2", "Unable to read header of data file.", strerror(errno));
         return false;
     }
-    if(version!=VERSION)
-    {
-        setLastError(filesInfo.sensor, "OPEN_DAT3", "Unable to read this version of data file.");
-        return false;
-    }
+    if(!checkHeader(filesInfo.sensor, signature, filesInfo.version, fileState, FileType::data)) return false;
+
+    filesInfo.data->Seekg(0, std::ios::end);
+    return true;
+}
+
+bool LightTSDB::openIndexFile(FilesInfo& filesInfo)
+{
+    string signature;
+    uint8_t version;
+    FileDataType dataType;
+    uint8_t options;
+    FileState fileState;
 
     filesInfo.index = new LtsdbFile();
-    if(!filesInfo.index->Open(getFileName(filesInfo.sensor, index)))
+    if(!filesInfo.index->Open(getFileName(filesInfo.sensor, FileType::index)))
     {
         setLastError(filesInfo.sensor, "OPEN_NDX1", "Unable to open index file.", strerror(errno));
         return false;
     }
-    filesInfo.index->ReadHeader(signature, &version, &fileType, &option, &fileState);
-    if(signature!=SIGNATURE)
+    filesInfo.index->Seekg(0, std::ios::beg);
+    if(!filesInfo.index->ReadHeader(&signature, &version, &dataType, &options, &fileState))
     {
-        setLastError(filesInfo.sensor, "OPEN_NDX2", "It's not a LightTSDB index file.");
+        setLastError(filesInfo.sensor, "OPEN_NDX2", "Unable to read header of index file.", strerror(errno));
         return false;
     }
-    if(version!=VERSION)
+    if(!checkHeader(filesInfo.sensor, signature, version, fileState, FileType::index)) return false;
+
+    if((filesInfo.type!=dataType)||(filesInfo.options!=options))
     {
-        setLastError(filesInfo.sensor, "OPEN_NDX3", "Unable to read this version of index file.");
+        setLastError(filesInfo.sensor, "OPEN_CHK1", "Index file is corrupt, repair it.");
         return false;
     }
 
+    filesInfo.index->Seekg(0, std::ios::end);
     return true;
 }
 
@@ -199,7 +246,7 @@ bool LightTSDB::createFiles(LightTSDB::FilesInfo& filesInfo)
         setLastError(filesInfo.sensor, "CREATE_DAT1", "Unable to create data file.", strerror(errno));
         return false;
     }
-    if(!filesInfo.data->WriteHeader(SIGNATURE, VERSION, static_cast<uint8_t>(FileType::Float), 0, static_cast<uint8_t>(FileState::Stable)))
+    if(!filesInfo.data->WriteHeader(SIGNATURE, VERSION, FileDataType::Float, 0, FileState::Stable))
     {
         setLastError(filesInfo.sensor, "CREATE_DAT2", "Unable to write header of data file.", strerror(errno));
         return false;
@@ -211,11 +258,13 @@ bool LightTSDB::createFiles(LightTSDB::FilesInfo& filesInfo)
         setLastError(filesInfo.sensor, "CREATE_NDX1", "Unable to create index file.", strerror(errno));
         return false;
     }
-    if(!filesInfo.index->WriteHeader(SIGNATURE, VERSION, static_cast<uint8_t>(FileType::Float), 0, static_cast<uint8_t>(FileState::Stable)))
+    if(!filesInfo.index->WriteHeader(SIGNATURE, VERSION, FileDataType::Float, 0, FileState::Stable))
     {
         setLastError(filesInfo.sensor, "CREATE_NDX2", "Unable to write header of index file.", strerror(errno));
         return false;
     }
+
+    filesInfo.startHour = 0;
 
     return true;
 }
@@ -223,8 +272,54 @@ bool LightTSDB::createFiles(LightTSDB::FilesInfo& filesInfo)
 void LightTSDB::cleanUp(FilesInfo* pFilesInfo)
 {
     if(!pFilesInfo) return;
-    if(pFilesInfo->data) delete(pFilesInfo->data);
-    if(pFilesInfo->index) delete(pFilesInfo->index);
+    if(pFilesInfo->data)
+    {
+        pFilesInfo->data->Close();
+        delete(pFilesInfo->data);
+    }
+    if(pFilesInfo->index)
+    {
+        pFilesInfo->index->Close();
+        delete(pFilesInfo->index);
+    }
+}
+
+bool LightTSDB::checkHeader(const std::string& sensor, const std::string& signature, uint8_t version, FileState state, FileType fileType)
+{
+    if(!checkSignature(sensor, signature, fileType)) return false;
+    if(!checkVersion(sensor, version, fileType)) return false;
+    if(!checkState(sensor, state, fileType)) return false;
+    return true;
+}
+
+bool LightTSDB::checkSignature(const std::string& sensor, const std::string& signature, FileType fileType)
+{
+    if(signature==SIGNATURE) return true;
+
+    string file = getFileExt(fileType);
+    if(file=="") file = "unknown";
+    setLastError(sensor, "CHECK_SIG", "It's not a LightTSDB "+file+" file.");
+    return false;
+}
+
+bool LightTSDB::checkVersion(const std::string& sensor, uint8_t version, FileType fileType)
+{
+    if(version==VERSION) return true;
+
+    string file = getFileExt(fileType);
+    if(file=="") file = "unknown";
+    setLastError(sensor, "CHECK_VER", "The version of "+file+" file is not supported by LightTSDB library.");
+    return false;
+}
+
+bool LightTSDB::checkState(const std::string& sensor, FileState state, FileType fileType)
+{
+    if(state==FileState::Stable) return true;
+
+    string file = getFileExt(fileType);
+    if(file=="") file = "unknown";
+    setLastError(sensor, "CHECK_STA", "The "+file+" file is not stable, repair it.");
+    return false;
 }
 
 void LightTSDB::setLastError(const string& sensor, const string& code, const string& errMessage, const string& sysMessage)
@@ -268,11 +363,6 @@ HourlyTimestamp_t HourlyTimestamp::FromTimeStruct(struct tm* tmHour)
 void HourlyTimestamp::ToTimeStruct(struct tm* tmHour, HourlyTimestamp_t hourlyTimestamp)
 {
     char* tmpBuffer=reinterpret_cast<char *>(&hourlyTimestamp);
-    time_t now;
-
-
-    time(&now);
-    gmtime_r(&now, tmHour);
 
     tmHour->tm_year = (int) tmpBuffer[0];
     tmHour->tm_mon  = (int) tmpBuffer[1];
@@ -280,6 +370,7 @@ void HourlyTimestamp::ToTimeStruct(struct tm* tmHour, HourlyTimestamp_t hourlyTi
     tmHour->tm_hour = (int) tmpBuffer[3];
     tmHour->tm_min  = 0;
     tmHour->tm_sec  = 0;
+    tmHour->tm_isdst = 0;
 }
 
 time_t HourlyTimestamp::ReadLastIndex(LtsdbFile* pIndexFile, LtsdbFile* pDataFile)
@@ -289,7 +380,6 @@ time_t HourlyTimestamp::ReadLastIndex(LtsdbFile* pIndexFile, LtsdbFile* pDataFil
     pIndexFile->Seekg(0, std::ios::end);
     pos = pIndexFile->Tellg();
     if(pos == 0) return 0;
-
     HourlyTimestamp_t hourIndex;
 
     pos -= (sizeof(hourIndex)+sizeof(streampos));
@@ -297,7 +387,6 @@ time_t HourlyTimestamp::ReadLastIndex(LtsdbFile* pIndexFile, LtsdbFile* pDataFil
     hourIndex = pIndexFile->ReadHourlyTimestamp();
     pos = pIndexFile->ReadStreamOffset();
     pIndexFile->Seekg(0, std::ios::end);
-
     int ret = VerifyDataHourlyTimestamp(hourIndex, pos, pDataFile);
     if(ret<0) return ret;
 
@@ -312,13 +401,14 @@ int HourlyTimestamp::VerifyDataHourlyTimestamp(HourlyTimestamp_t hourIndex, stre
 
     pDataFile->Seekg(pos, std::ios::beg);
     hourData = pDataFile->ReadHourlyTimestamp();
+cout << "Data time " << HourlyTimestamp::ToString(hourData) << endl;
     if(hourData!=hourIndex) return -1;
 
     HourlyOffset_t offset;
     HourlyOffset_t offsetMax = 0;
     float value;
 
-    while(pDataFile->ReadHourlyOffset(&offset, &value)==true)
+    while(pDataFile->ReadValue(&offset, &value)==true)
     {
         if(offset==ENDLINE) break;
         offsetMax = offset;
@@ -333,7 +423,7 @@ int HourlyTimestamp::VerifyDataHourlyTimestamp(HourlyTimestamp_t hourIndex, stre
     tMax += offsetMax;
 
     time(&tCur);
-    gmtime_r(&tCur, &tmp);
+    localtime_r(&tCur, &tmp);
     tCur = mktime(&tmp);
 
     if(tMax>tCur) return -2;
@@ -448,7 +538,7 @@ HourlyTimestamp_t LtsdbFile::ReadHourlyTimestamp()
     return hourlyTimestamp;
 }
 
-bool LtsdbFile::ReadHourlyOffset(HourlyOffset_t* offset, float* value)
+bool LtsdbFile::ReadValue(HourlyOffset_t* offset, float* value)
 {
     m_InternalFile.read(reinterpret_cast<char *>(offset), sizeof(HourlyOffset_t));
     if(*offset==ENDLINE) return true;
@@ -456,38 +546,37 @@ bool LtsdbFile::ReadHourlyOffset(HourlyOffset_t* offset, float* value)
     return m_InternalFile.good();
 }
 
-bool LtsdbFile::WriteHourlyOffset(HourlyOffset_t offset, float value)
+bool LtsdbFile::WriteValue(HourlyOffset_t offset, float value)
 {
     m_InternalFile.write(reinterpret_cast<const char *>(&offset), sizeof(HourlyOffset_t));
     m_InternalFile.write(reinterpret_cast<const char *>(&value), sizeof(float));
     return m_InternalFile.good();
 }
 
-bool LtsdbFile::WriteHourlyOffsetEndLine()
+bool LtsdbFile::WriteEndLine()
 {
     m_InternalFile.write(reinterpret_cast<const char *>(&ENDLINE), sizeof(ENDLINE));
     return m_InternalFile.good();
 }
 
-bool LtsdbFile::ReadHeader(std::string signature, uint8_t* version, uint8_t* type, uint8_t* options, uint8_t* state)
+bool LtsdbFile::ReadHeader(std::string* signature, uint8_t* version, FileDataType* type, uint8_t* options, FileState* state)
 {
-    int sigSize = strlen(SIGNATURE);
+    int sigSize = SIGNATURE.size();
     char* charsig = new char[sigSize+1];
 
     m_InternalFile.read(charsig, sigSize);
+    charsig[sigSize] = 0;
+    *signature = charsig;
     m_InternalFile.read(reinterpret_cast<char *>(version), sizeof(uint8_t));
     m_InternalFile.read(reinterpret_cast<char *>(type), sizeof(uint8_t));
     m_InternalFile.read(reinterpret_cast<char *>(options), sizeof(uint8_t));
     m_InternalFile.read(reinterpret_cast<char *>(state), sizeof(uint8_t));
-
-    signature = charsig;
-
     return m_InternalFile.good();
 }
 
-bool LtsdbFile::WriteHeader(const char* signature, const uint8_t version, const uint8_t type, const uint8_t options, const uint8_t state)
+bool LtsdbFile::WriteHeader(std::string signature, const uint8_t version, const FileDataType type, const uint8_t options, const FileState state)
 {
-    m_InternalFile.write(signature, strlen(signature));
+    m_InternalFile.write(signature.c_str(), signature.size());
     m_InternalFile.write(reinterpret_cast<const char *>(&version), sizeof(uint8_t));
     m_InternalFile.write(reinterpret_cast<const char *>(&type), sizeof(uint8_t));
     m_InternalFile.write(reinterpret_cast<const char *>(&options), sizeof(uint8_t));

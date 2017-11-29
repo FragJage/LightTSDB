@@ -88,10 +88,10 @@ namespace LightTSDB {
 
 typedef uint32_t HourlyTimestamp_t;
 typedef uint16_t HourlyOffset_t;
-enum class FileState { Stable, Busy };
-enum class FileType { Float };
+enum FileState : uint8_t { Stable, Busy };
+enum FileDataType : uint8_t { Undefined, Float };
 
-static const char* SIGNATURE = "LTSDB";
+static const std::string SIGNATURE = "LTSDB";
 static const uint8_t VERSION = 1;
 static const uint16_t ENDLINE = 0XFFFE;
 
@@ -109,11 +109,11 @@ class LtsdbFile
         std::streampos ReadStreamOffset();
         bool WriteHourlyTimestamp(HourlyTimestamp_t hourlyTimestamp);
         HourlyTimestamp_t ReadHourlyTimestamp();
-        bool ReadHourlyOffset(HourlyOffset_t* offset, float* value);
-        bool WriteHourlyOffset(HourlyOffset_t offset, float value);
-        bool WriteHourlyOffsetEndLine();
-        bool ReadHeader(std::string signature, uint8_t* version, uint8_t* type, uint8_t* options, uint8_t* state);
-        bool WriteHeader(const char* signature, const uint8_t version, const uint8_t type, const uint8_t options, const uint8_t state);
+        bool ReadValue(HourlyOffset_t* offset, float* value);
+        bool WriteValue(HourlyOffset_t offset, float value);
+        bool WriteEndLine();
+        bool ReadHeader(std::string* signature, uint8_t* version, FileDataType* type, uint8_t* options, FileState* state);
+        bool WriteHeader(std::string signature, const uint8_t version, const FileDataType type, const uint8_t options, const FileState state);
         static bool FileExists(const std::string& fileName);
     private:
         ltsdb_fs_t m_InternalFile;
@@ -139,12 +139,29 @@ class LightTSDB
         /// \details  Destructor of LightTSDB.
         ~LightTSDB();
 
+        /// \brief    Set LightTSDB files folder
+        /// \details  Set the folder where data and index files of LightTSDB will be stored.
+        /// \param    folder       The folder
+        void SetFolder(const std::string& folder);
+
         /// \brief    Write value into LightTSDB
         /// \details  Add a new value of a sensor into LightTSDB at current time.
         /// \param    sensor       Name of sensor
         /// \param    value        Value of sensor
         /// \return   Iterator on the first key in the section
         bool WriteValue(const std::string& sensor, float value);
+
+        /// \brief    Close LightTSDB files
+        /// \details  Close LightTSDB files (data and index) for a sensor.
+        /// \param    sensor       The sensor
+        /// \return   True if files are closed
+        bool Close(const std::string& sensor);
+
+        /// \brief    Remove LightTSDB files
+        /// \details  Close and remove LightTSDB files (data and index) for a sensor.
+        /// \param    sensor       The sensor
+        /// \return   True if files are removed
+        bool Remove(const std::string& sensor);
 
         /// \brief    Get last error
         /// \details  Get the last error.
@@ -154,21 +171,34 @@ class LightTSDB
     private:
         struct FilesInfo
         {
-            FilesInfo() : data(nullptr), index(nullptr), startHour(0), sensor() {}
-            FilesInfo(std::string sensor) : data(nullptr), index(nullptr), startHour(0), sensor(sensor) {}
+            FilesInfo() : data(nullptr), index(nullptr), startHour(0), sensor(), version(0), type(FileDataType::Undefined), options(0) {}
+            FilesInfo(std::string sensor) : data(nullptr), index(nullptr), startHour(0), sensor(sensor), version(0), type(FileDataType::Undefined), options(0) {}
             LtsdbFile* data;
             LtsdbFile* index;
             std::time_t startHour;
             std::string sensor;
+            uint8_t version;
+            FileDataType type;
+            uint8_t options;
         };
 
-        enum FileNameType { data, index };
+        enum FileType { data, index };
+
+        std::string getFileName(const std::string& sensor, FileType fileType);
+        std::string getFileExt(FileType fileType);
 
         FilesInfo* getFilesInfo(const std::string& sensor);
-        std::string getFileName(const std::string& sensor, FileNameType fileNameType);
-        bool openFiles(FilesInfo& filesInfo);
-        bool createFiles(FilesInfo& filesInfo);
         void cleanUp(FilesInfo* pFileInfo);
+
+        bool openFiles(FilesInfo& filesInfo);
+        bool openDataFile(FilesInfo& filesInfo);
+        bool openIndexFile(FilesInfo& filesInfo);
+        bool createFiles(FilesInfo& filesInfo);
+
+        bool checkHeader(const std::string& sensor, const std::string& signature, uint8_t version, FileState state, FileType fileType);
+        bool checkSignature(const std::string& sensor, const std::string& signature, FileType fileType);
+        bool checkVersion(const std::string& sensor, uint8_t version, FileType fileType);
+        bool checkState(const std::string& sensor, FileState state, FileType fileType);
         void setLastError(const std::string& sensor, const std::string& code, const std::string& errMessage, const std::string& sysMessage="");
 
         std::string m_Folder;

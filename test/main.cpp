@@ -6,19 +6,19 @@
 
 using namespace std;
 
-//Add Header : Signature, Version, Type, Options and State on index and data files
+//Add SetFolder,close,Unlink Methods
 //Add uvw (wrapper for libuv)
+//Add read functions
 //Add compression
 //Add Wrtie Cache and Flush ?
 //Add Read Cache ?
-//Add read functions
 //Tool for check data file
 //Tool for rebuild index file
 
 int main()
 {
     string sensor = "LucileBedRoomTemperature";
-    int i;
+    int i,j,nb;
     LightTSDB::LightTSDB myTSDB;
     float myTemp = 21.0;
     random_device rd;
@@ -30,19 +30,29 @@ int main()
     SetMockTime(2017, 10, 25, 12, 10, 42);
 
     auto t0 = chrono::high_resolution_clock::now();
-    for(i=0; i<1000000; i++)
+    nb = 0;
+    for(j=0; j<3; j++)
     {
-        MockAddSecond(rdSecond(gen));
-        myTemp += rdTemperature(gen);
-        if(!myTSDB.WriteValue(sensor, myTemp))
+        for(i=0; i<3; i++)
         {
-            cout << "Failed to write : " << myTSDB.GetLastError(sensor).ErrMessage << endl;
-            break;
+            MockAddSecond(rdSecond(gen));
+            myTemp += rdTemperature(gen);
+            if(!myTSDB.WriteValue(sensor, myTemp))
+            {
+                cout << "Failed to write : " << myTSDB.GetLastError(sensor).ErrMessage << endl;
+                break;
+            }
+            else
+            {
+                nb++;
+            }
         }
+        myTSDB.Close(sensor);
     }
     auto t1 = chrono::high_resolution_clock::now();
     chrono::duration<float> fs = t1 - t0;
+    myTSDB.Remove(sensor);
 
-    cout << "Write " << i << " temperatures in " << fs.count() << " s." << endl;
+    cout << "Write " << nb << " temperatures in " << fs.count() << " s." << endl;
     return 0;
 }
