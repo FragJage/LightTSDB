@@ -209,9 +209,9 @@ class LightTSDB
 class HourlyTimestamp
 {
     public:
-        static HourlyTimestamp_t FromTimeStruct(struct tm* tmHour);
-        static void ToTimeStruct(struct tm* tmHour, HourlyTimestamp_t hourlyTimestamp);
-        static std::time_t ReadLastIndex(LtsdbFile* pIndexFile, LtsdbFile* pDataFile);
+        static HourlyTimestamp_t FromTimeT(time_t time);
+        static time_t ToTimeT(HourlyTimestamp_t hourlyTimestamp);
+        static HourlyTimestamp_t ReadLastIndex(LtsdbFile* pIndexFile, LtsdbFile* pDataFile);
         static std::string ToString(HourlyTimestamp_t hourlyTimestamp);
     private:
         static int VerifyDataHourlyTimestamp(HourlyTimestamp_t hourIndex, std::streampos pos, LtsdbFile* pDataFile);

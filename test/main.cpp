@@ -31,9 +31,9 @@ int main()
 
     auto t0 = chrono::high_resolution_clock::now();
     nb = 0;
-    for(j=0; j<3; j++)
+    for(j=0; j<1000; j++)
     {
-        for(i=0; i<150; i++)
+        for(i=0; i<1000; i++)
         {
             MockAddSecond(rdSecond(gen));
             myTemp += rdTemperature(gen);

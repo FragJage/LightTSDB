@@ -58,7 +58,6 @@ bool LightTSDB::WriteValue(const string& sensor, float value)
 {
     FilesInfo* filesInfo;
     time_t now;
-    struct tm tmNow;
 
 
     filesInfo = getFilesInfo(sensor);
@@ -70,22 +69,14 @@ bool LightTSDB::WriteValue(const string& sensor, float value)
     {
         if(filesInfo->startHour>0) filesInfo->data->WriteEndLine();
 
-        localtime_r(&now, &tmNow);
-        filesInfo->startHour = now - tmNow.tm_min*60 - tmNow.tm_sec;
-        tmNow.tm_min = 0;
-        tmNow.tm_sec = 0;
-
-        HourlyTimestamp_t hourlyTimestamp = HourlyTimestamp::FromTimeStruct(&tmNow);
+        HourlyTimestamp_t hourlyTimestamp = HourlyTimestamp::FromTimeT(now);
+        filesInfo->startHour = HourlyTimestamp::ToTimeT(hourlyTimestamp);
         filesInfo->index->WriteHourlyTimestamp(hourlyTimestamp);
-cout << "Data file write time " << HourlyTimestamp::ToString(hourlyTimestamp) << " = " << filesInfo->startHour << " = " << mktime(&tmNow) << endl;
         filesInfo->index->WriteStreamOffset(filesInfo->data->Tellp());
         filesInfo->data->WriteHourlyTimestamp(hourlyTimestamp);
-HourlyTimestamp::ToTimeStruct(&tmNow, hourlyTimestamp);
-cout << "Retour " << mktime(&tmNow) << endl;
     }
 
     HourlyOffset_t offset = difftime(now, filesInfo->startHour);
-///cout << offset << " ";
     filesInfo->data->WriteValue(offset, value);
 
     return true;
@@ -169,10 +160,13 @@ std::string LightTSDB::getFileExt(FileType fileType)
 
 bool LightTSDB::openFiles(LightTSDB::FilesInfo& filesInfo)
 {
+    HourlyTimestamp_t hourlyTimestamp;
+
     if(!openDataFile(filesInfo)) return false;
     if(!openIndexFile(filesInfo)) return false;
 
-    filesInfo.startHour = HourlyTimestamp::ReadLastIndex(filesInfo.index, filesInfo.data);
+    hourlyTimestamp = HourlyTimestamp::ReadLastIndex(filesInfo.index, filesInfo.data);
+    filesInfo.startHour = HourlyTimestamp::ToTimeT(hourlyTimestamp);
     if(filesInfo.startHour == -1)
     {
         setLastError(filesInfo.sensor, "OPEN_COR1", "Index file is corrupt.");
@@ -351,51 +345,35 @@ LightTSDB::ErrorInfo LightTSDB::GetLastError(const string& sensor)
 /*** Class HourlyTimestamp                                                                                  ***/
 /***                                                                                                        ***/
 /**************************************************************************************************************/
-HourlyTimestamp_t HourlyTimestamp::FromTimeStruct(struct tm* tmHour)
+HourlyTimestamp_t HourlyTimestamp::FromTimeT(time_t time)
 {
-    HourlyTimestamp_t hourlyTimestamp;
-    char* tmpBuffer=reinterpret_cast<char *>(&hourlyTimestamp);
-
-    tmpBuffer[0] = (char) tmHour->tm_year;
-    tmpBuffer[1] = (char) tmHour->tm_mon;
-    tmpBuffer[2] = (char) tmHour->tm_mday;
-    tmpBuffer[3] = (char) tmHour->tm_hour;
-
+    HourlyTimestamp_t hourlyTimestamp = time/3600;
     return hourlyTimestamp;
 }
 
-void HourlyTimestamp::ToTimeStruct(struct tm* tmHour, HourlyTimestamp_t hourlyTimestamp)
+time_t HourlyTimestamp::ToTimeT(HourlyTimestamp_t hourlyTimestamp)
 {
-    char* tmpBuffer=reinterpret_cast<char *>(&hourlyTimestamp);
-
-    tmHour->tm_year = (int) tmpBuffer[0];
-    tmHour->tm_mon  = (int) tmpBuffer[1];
-    tmHour->tm_mday = (int) tmpBuffer[2];
-    tmHour->tm_hour = (int) tmpBuffer[3];
-    tmHour->tm_min  = 0;
-    tmHour->tm_sec  = 0;
+    time_t time = hourlyTimestamp*3600;
+    return time;
 }
 
-time_t HourlyTimestamp::ReadLastIndex(LtsdbFile* pIndexFile, LtsdbFile* pDataFile)
+HourlyTimestamp_t HourlyTimestamp::ReadLastIndex(LtsdbFile* pIndexFile, LtsdbFile* pDataFile)
 {
     streampos pos;
+    HourlyTimestamp_t hourIndex;
 
     pIndexFile->Seekg(0, std::ios::end);
     pos = pIndexFile->Tellg();
-    if(pos == 0) return 0;
-    HourlyTimestamp_t hourIndex;
-
     pos -= (sizeof(hourIndex)+sizeof(streampos));
     pIndexFile->Seekg(pos, std::ios::beg);
     hourIndex = pIndexFile->ReadHourlyTimestamp();
     pos = pIndexFile->ReadStreamOffset();
     pIndexFile->Seekg(0, std::ios::end);
+
     int ret = VerifyDataHourlyTimestamp(hourIndex, pos, pDataFile);
     if(ret<0) return ret;
 
-    struct tm tmLast;
-    ToTimeStruct(&tmLast, hourIndex);
-    return mktime(&tmLast);
+    return hourIndex;
 }
 
 int HourlyTimestamp::VerifyDataHourlyTimestamp(HourlyTimestamp_t hourIndex, streampos pos, LtsdbFile* pDataFile)
@@ -416,18 +394,8 @@ int HourlyTimestamp::VerifyDataHourlyTimestamp(HourlyTimestamp_t hourIndex, stre
         offsetMax = offset;
     }
 
-    struct tm tmp;
-    time_t tMax;
-    time_t tCur;
-
-    ToTimeStruct(&tmp, hourData);
-    tMax = mktime(&tmp);
-cout << "Data file read time " << HourlyTimestamp::ToString(hourData) << " = " << tMax << endl;
-    tMax += offsetMax;
-
-    time(&tCur);
-    localtime_r(&tCur, &tmp);
-    tCur = mktime(&tmp);
+    time_t tMax = HourlyTimestamp::ToTimeT(hourData)+offsetMax;
+    time_t tCur = time(0);
 
     if(tMax>tCur) return -2;
 
@@ -437,10 +405,13 @@ cout << "Data file read time " << HourlyTimestamp::ToString(hourData) << " = " <
 
 std::string HourlyTimestamp::ToString(HourlyTimestamp_t hourlyTimestamp)
 {
-    char* tmpBuffer=reinterpret_cast<char *>(&hourlyTimestamp);
+    time_t ttime = HourlyTimestamp::ToTimeT(hourlyTimestamp);
+    struct tm stime;
     ostringstream oss;
 
-    oss << 1900+(int) tmpBuffer[0] << "/" << 1+(int) tmpBuffer[1] << "/" << (int) tmpBuffer[2] << " " << (int) tmpBuffer[3] << "h";
+    localtime_r(&ttime, &stime);
+
+    oss << 1900+stime.tm_year << "/" << 1+stime.tm_mon << "/" << stime.tm_mday << " " << stime.tm_hour << "h";
     return oss.str();
 }
 
