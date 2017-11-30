@@ -6,14 +6,18 @@
 
 using namespace std;
 
-//Add SetFolder,close,Unlink Methods
-//Add uvw (wrapper for libuv)
+//TO DO List
 //Add read functions
+//Add write value with time offset
+//Add uvw (wrapper for libuv)
 //Add compression
-//Add Wrtie Cache and Flush ?
+//Add Write Cache and Flush ?
 //Add Read Cache ?
+//Use state flag
+//Read/Write an others types
 //Tool for check data file
 //Tool for rebuild index file
+//Tool for compress or uncompress file
 
 int main()
 {

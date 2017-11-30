@@ -71,6 +71,7 @@
 
 #include <string>
 #include <map>
+#include <list>
 #include <ctime>
 #ifdef HAVE_LIBUV
     #include "uvw.hpp"
@@ -90,6 +91,12 @@ typedef uint32_t HourlyTimestamp_t;
 typedef uint16_t HourlyOffset_t;
 enum FileState : uint8_t { Stable, Busy };
 enum FileDataType : uint8_t { Undefined, Float };
+
+struct DataValue
+{
+    time_t time;
+    float value;
+};
 
 static const std::string SIGNATURE = "LTSDB";
 static const uint8_t VERSION = 1;
@@ -148,8 +155,25 @@ class LightTSDB
         /// \details  Add a new value of a sensor into LightTSDB at current time.
         /// \param    sensor       Name of sensor
         /// \param    value        Value of sensor
-        /// \return   Iterator on the first key in the section
+        /// \return   True if value is write
         bool WriteValue(const std::string& sensor, float value);
+
+        /// \brief    Read values into LightTSDB
+        /// \details  Read values of a sensor into LightTSDB for an hour.
+        /// \param    sensor       Name of sensor
+        /// \param    hour         Hour
+        /// \param    values       List of time/value
+        /// \return   True if values are found
+        bool ReadValues(const std::string& sensor, time_t hour, std::list<DataValue> values);
+
+        /// \brief    Read values into LightTSDB
+        /// \details  Read values of a sensor into LightTSDB between two hours.
+        /// \param    sensor       Name of sensor
+        /// \param    hourBegin    Beginning hour
+        /// \param    hourEnd      Ending hour
+        /// \param    values       List of time/value
+        /// \return   True if values are found
+        bool ReadValues(const std::string& sensor, time_t hourBegin, time_t hourEnd, std::list<DataValue> values);
 
         /// \brief    Close LightTSDB files
         /// \details  Close LightTSDB files (data and index) for a sensor.

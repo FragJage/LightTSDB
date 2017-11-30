@@ -82,6 +82,16 @@ bool LightTSDB::WriteValue(const string& sensor, float value)
     return true;
 }
 
+bool LightTSDB::ReadValues(const std::string& sensor, time_t hour, std::list<DataValue> values)
+{
+    return true;
+}
+
+bool LightTSDB::ReadValues(const std::string& sensor, time_t hourBegin, time_t hourEnd, std::list<DataValue> values)
+{
+    return true;
+}
+
 bool LightTSDB::Close(const std::string& sensor)
 {
     map<string,FilesInfo>::iterator it = m_FilesInfo.find(sensor);
