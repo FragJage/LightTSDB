@@ -73,7 +73,11 @@ bool LightTSDB::WriteValue(const string& sensor, float value)
         filesInfo->startHour = HourlyTimestamp::ToTimeT(hourlyTimestamp);
         filesInfo->index->WriteHourlyTimestamp(hourlyTimestamp);
         filesInfo->index->WriteStreamOffset(filesInfo->data->Tellp());
+        filesInfo->indexSize += INDEX_STEP;
         filesInfo->data->WriteHourlyTimestamp(hourlyTimestamp);
+
+        if(filesInfo->minHour == 0) filesInfo->minHour = filesInfo->startHour;
+        filesInfo->maxHour = filesInfo->startHour;
     }
 
     HourlyOffset_t offset = difftime(now, filesInfo->startHour);
@@ -82,12 +86,20 @@ bool LightTSDB::WriteValue(const string& sensor, float value)
     return true;
 }
 
-bool LightTSDB::ReadValues(const std::string& sensor, time_t hour, std::list<DataValue> values)
+bool LightTSDB::ReadValues(const std::string& sensor, time_t hour, std::list<DataValue>& values)
 {
+    FilesInfo* filesInfo = getFilesInfo(sensor);
+    if(filesInfo == nullptr) return false;
+
+    HourlyTimestamp_t hourlyTimestamp = HourlyTimestamp::FromTimeT(hour);
+
+    streampos pos = findIndex(filesInfo, hourlyTimestamp);
+    if(pos==0) return true;
+
     return true;
 }
 
-bool LightTSDB::ReadValues(const std::string& sensor, time_t hourBegin, time_t hourEnd, std::list<DataValue> values)
+bool LightTSDB::ReadValues(const std::string& sensor, time_t hourBegin, time_t hourEnd, std::list<DataValue>& values)
 {
     return true;
 }
@@ -221,6 +233,7 @@ bool LightTSDB::openIndexFile(FilesInfo& filesInfo)
     FileDataType dataType;
     uint8_t options;
     FileState fileState;
+    streampos pos;
 
     filesInfo.index = new LtsdbFile();
     if(!filesInfo.index->Open(getFileName(filesInfo.sensor, FileType::index)))
@@ -241,6 +254,15 @@ bool LightTSDB::openIndexFile(FilesInfo& filesInfo)
         setLastError(filesInfo.sensor, "OPEN_CHK1", "Index file is corrupt, repair it.");
         return false;
     }
+
+    filesInfo.minHour = filesInfo.index->ReadHourlyTimestamp();
+    filesInfo.index->Seekg(0, std::ios::end);
+    pos = filesInfo.index->Tellg();
+    filesInfo.indexSize = pos;
+    filesInfo.indexSize -= HEADER_SIZE;
+    pos -= INDEX_STEP;
+    filesInfo.index->Seekg(pos, std::ios::beg);
+    filesInfo.maxHour = filesInfo.index->ReadHourlyTimestamp();
 
     filesInfo.index->Seekg(0, std::ios::end);
     return true;
@@ -328,6 +350,51 @@ bool LightTSDB::checkState(const std::string& sensor, FileState state, FileType 
     if(file=="") file = "unknown";
     setLastError(sensor, "CHECK_STA", "The "+file+" file is not stable, repair it.");
     return false;
+}
+
+streampos LightTSDB::findIndex(FilesInfo* filesInfo, HourlyTimestamp_t hourlyTimestamp)
+{
+    streampos pos;
+    HourlyTimestamp_t foundTimestamp;
+
+
+    if(hourlyTimestamp < filesInfo->minHour) return 0;
+    if(hourlyTimestamp > filesInfo->maxHour) return 0;
+
+    if(filesInfo->maxHour == filesInfo->minHour)
+        pos = 0;
+    else
+        pos = filesInfo->indexSize*(hourlyTimestamp-filesInfo->minHour)/(filesInfo->maxHour-filesInfo->minHour);
+
+    pos = HEADER_SIZE+INDEX_STEP*(pos%INDEX_STEP);
+
+    filesInfo->index->Seekg(pos, std::ios::beg);
+    foundTimestamp = filesInfo->index->ReadHourlyTimestamp();
+    if(foundTimestamp == hourlyTimestamp) return filesInfo->index->ReadStreamOffset();
+
+    if(foundTimestamp < hourlyTimestamp)
+    {
+        while(foundTimestamp != hourlyTimestamp)
+        {
+            if(filesInfo->index->Seekg(sizeof(StreamOffset_t), std::ios::cur)) return 0;
+            foundTimestamp = filesInfo->index->ReadHourlyTimestamp();
+            if(foundTimestamp > hourlyTimestamp)  return 0;
+        }
+        return return filesInfo->index->ReadStreamOffset();
+    }
+
+    if(foundTimestamp > hourlyTimestamp)
+    {
+        while(foundTimestamp != hourlyTimestamp)
+        {
+            if(filesInfo->index->Seekg(-(INDEX_STEP+sizeof(HourlyTimestamp_t)), std::ios::cur))  return 0;
+            foundTimestamp = filesInfo->index->ReadHourlyTimestamp();
+            if(foundTimestamp < hourlyTimestamp) return 0;
+        }
+        return filesInfo->index->ReadStreamOffset();
+    }
+
+    return 0;
 }
 
 void LightTSDB::setLastError(const string& sensor, const string& code, const string& errMessage, const string& sysMessage)
@@ -480,9 +547,10 @@ void LtsdbFile::Close()
     m_InternalFile.close();
 }
 
-void LtsdbFile::Seekg(streamoff off, ios_base::seekdir way)
+bool LtsdbFile::Seekg(streamoff off, ios_base::seekdir way)
 {
-    m_InternalFile.seekg(off, way);
+    if(!m_InternalFile.seekg(off, way)) return false;
+    return true;
 }
 
 streampos LtsdbFile::Tellp()

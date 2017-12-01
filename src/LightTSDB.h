@@ -102,6 +102,9 @@ static const std::string SIGNATURE = "LTSDB";
 static const uint8_t VERSION = 1;
 static const uint16_t ENDLINE = 0XFFFE;
 
+static const int INDEX_STEP = sizeof(HourlyTimestamp_t)+sizeof(std::streampos);
+static const int HEADER_SIZE = sizeof(SIGNATURE)+sizeof(VERSION)+sizeof(FileDataType)+sizeof(uint8_t)+sizeof(FileState);
+
 class LtsdbFile
 {
     public:
@@ -109,7 +112,7 @@ class LtsdbFile
         ~LtsdbFile();
         bool Open(const std::string& fileName);
         void Close();
-        void Seekg(std::streamoff off, std::ios_base::seekdir way);
+        bool Seekg(std::streamoff off, std::ios_base::seekdir way);
         std::streampos Tellp();
         std::streampos Tellg();
         bool WriteStreamOffset(std::streampos pos);
@@ -164,7 +167,7 @@ class LightTSDB
         /// \param    hour         Hour
         /// \param    values       List of time/value
         /// \return   True if values are found
-        bool ReadValues(const std::string& sensor, time_t hour, std::list<DataValue> values);
+        bool ReadValues(const std::string& sensor, time_t hour, std::list<DataValue>& values);
 
         /// \brief    Read values into LightTSDB
         /// \details  Read values of a sensor into LightTSDB between two hours.
@@ -173,7 +176,7 @@ class LightTSDB
         /// \param    hourEnd      Ending hour
         /// \param    values       List of time/value
         /// \return   True if values are found
-        bool ReadValues(const std::string& sensor, time_t hourBegin, time_t hourEnd, std::list<DataValue> values);
+        bool ReadValues(const std::string& sensor, time_t hourBegin, time_t hourEnd, std::list<DataValue>& values);
 
         /// \brief    Close LightTSDB files
         /// \details  Close LightTSDB files (data and index) for a sensor.
@@ -195,11 +198,14 @@ class LightTSDB
     private:
         struct FilesInfo
         {
-            FilesInfo() : data(nullptr), index(nullptr), startHour(0), sensor(), version(0), type(FileDataType::Undefined), options(0) {}
-            FilesInfo(std::string sensor) : data(nullptr), index(nullptr), startHour(0), sensor(sensor), version(0), type(FileDataType::Undefined), options(0) {}
+            FilesInfo() : data(nullptr), index(nullptr), startHour(0), minHour(0), maxHour(0), indexSize(0), sensor(), version(0), type(FileDataType::Undefined), options(0) {}
+            FilesInfo(std::string sensor) : data(nullptr), index(nullptr), startHour(0), minHour(0), maxHour(0), indexSize(0), sensor(sensor), version(0), type(FileDataType::Undefined), options(0) {}
             LtsdbFile* data;
             LtsdbFile* index;
             std::time_t startHour;
+            HourlyTimestamp_t minHour;
+            HourlyTimestamp_t maxHour;
+            std::streampos indexSize;
             std::string sensor;
             uint8_t version;
             FileDataType type;
@@ -208,8 +214,8 @@ class LightTSDB
 
         enum FileType { data, index };
 
-        std::string getFileName(const std::string& sensor, FileType fileType);
-        std::string getFileExt(FileType fileType);
+        std::string getFileName(const std::string& sensor, const FileType fileType);
+        std::string getFileExt(const FileType fileType);
 
         FilesInfo* getFilesInfo(const std::string& sensor);
         void cleanUp(FilesInfo* pFileInfo);
@@ -218,6 +224,8 @@ class LightTSDB
         bool openDataFile(FilesInfo& filesInfo);
         bool openIndexFile(FilesInfo& filesInfo);
         bool createFiles(FilesInfo& filesInfo);
+
+        std::streampos findIndex(FilesInfo* filesInfo, HourlyTimestamp_t hourlyTimestamp);
 
         bool checkHeader(const std::string& sensor, const std::string& signature, uint8_t version, FileState state, FileType fileType);
         bool checkSignature(const std::string& sensor, const std::string& signature, FileType fileType);

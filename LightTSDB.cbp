@@ -13,11 +13,12 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-O2" />
+					<Add option="-pg" />
 					<Add option="-DWIN" />
 					<Add directory="src" />
 				</Compiler>
 				<Linker>
-					<Add option="-s" />
+					<Add option="-pg -lgmon" />
 				</Linker>
 			</Target>
 			<Target title="Debug">
@@ -27,11 +28,15 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-O2" />
+					<Add option="-pg" />
 					<Add option="-g" />
 					<Add option="-DDEBUG" />
 					<Add option="-DWIN" />
 					<Add directory="src" />
 				</Compiler>
+				<Linker>
+					<Add option="-pg -lgmon" />
+				</Linker>
 			</Target>
 		</Build>
 		<Compiler>
