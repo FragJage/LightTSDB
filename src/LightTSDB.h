@@ -53,7 +53,6 @@
 ///     LightTSDB::LightTSDB myTSDB;
 ///
 ///     myTSDB.WriteValue("TomBedRoomTemperature", 24.8);
-///     myTSDB.Flush();
 ///
 ///     return 0;
 /// }
@@ -94,6 +93,8 @@ enum FileDataType : uint8_t { Undefined, Float };
 
 struct DataValue
 {
+    DataValue() : time(), value() {}
+    DataValue(time_t t, float v) : time(t), value(v) {}
     time_t time;
     float value;
 };
@@ -103,7 +104,7 @@ static const uint8_t VERSION = 1;
 static const uint16_t ENDLINE = 0XFFFE;
 
 static const int INDEX_STEP = sizeof(HourlyTimestamp_t)+sizeof(std::streampos);
-static const int HEADER_SIZE = sizeof(SIGNATURE)+sizeof(VERSION)+sizeof(FileDataType)+sizeof(uint8_t)+sizeof(FileState);
+static const int HEADER_SIZE = SIGNATURE.size()+sizeof(VERSION)+sizeof(FileDataType)+sizeof(uint8_t)+sizeof(FileState);
 
 class LtsdbFile
 {
@@ -111,7 +112,10 @@ class LtsdbFile
         LtsdbFile();
         ~LtsdbFile();
         bool Open(const std::string& fileName);
+        bool Is_Open();
         void Close();
+        void Clear();
+        bool Seekp(std::streamoff off, std::ios_base::seekdir way);
         bool Seekg(std::streamoff off, std::ios_base::seekdir way);
         std::streampos Tellp();
         std::streampos Tellg();
@@ -162,7 +166,7 @@ class LightTSDB
         bool WriteValue(const std::string& sensor, float value);
 
         /// \brief    Read values into LightTSDB
-        /// \details  Read values of a sensor into LightTSDB for an hour.
+        /// \details  Read all values of a sensor into LightTSDB for an hour.
         /// \param    sensor       Name of sensor
         /// \param    hour         Hour
         /// \param    values       List of time/value
@@ -170,7 +174,7 @@ class LightTSDB
         bool ReadValues(const std::string& sensor, time_t hour, std::list<DataValue>& values);
 
         /// \brief    Read values into LightTSDB
-        /// \details  Read values of a sensor into LightTSDB between two hours.
+        /// \details  Read values of a sensor into LightTSDB between two times.
         /// \param    sensor       Name of sensor
         /// \param    hourBegin    Beginning hour
         /// \param    hourEnd      Ending hour
@@ -242,7 +246,7 @@ class HourlyTimestamp
 {
     public:
         static HourlyTimestamp_t FromTimeT(time_t time);
-        static time_t ToTimeT(HourlyTimestamp_t hourlyTimestamp);
+        static time_t ToTimeT(HourlyTimestamp_t hourlyTimestamp, HourlyOffset_t offset=0);
         static HourlyTimestamp_t ReadLastIndex(LtsdbFile* pIndexFile, LtsdbFile* pDataFile);
         static std::string ToString(HourlyTimestamp_t hourlyTimestamp);
     private:

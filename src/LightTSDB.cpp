@@ -18,8 +18,6 @@
     along with LightTSDB.  If not, see <http://www.gnu.org/licenses/>.
 */
 /***************************************************************************************************/
-#include <iostream>
-
 #include <cstring>      //for strerror
 #include <sstream>
 #include "LightTSDB.h"
@@ -76,12 +74,12 @@ bool LightTSDB::WriteValue(const string& sensor, float value)
         filesInfo->indexSize += INDEX_STEP;
         filesInfo->data->WriteHourlyTimestamp(hourlyTimestamp);
 
-        if(filesInfo->minHour == 0) filesInfo->minHour = filesInfo->startHour;
-        filesInfo->maxHour = filesInfo->startHour;
+        if(filesInfo->minHour == 0) filesInfo->minHour = hourlyTimestamp;
+        filesInfo->maxHour = hourlyTimestamp;
     }
 
     HourlyOffset_t offset = difftime(now, filesInfo->startHour);
-    filesInfo->data->WriteValue(offset, value);
+    if(!filesInfo->data->WriteValue(offset, value)) return false;
 
     return true;
 }
@@ -92,11 +90,22 @@ bool LightTSDB::ReadValues(const std::string& sensor, time_t hour, std::list<Dat
     if(filesInfo == nullptr) return false;
 
     HourlyTimestamp_t hourlyTimestamp = HourlyTimestamp::FromTimeT(hour);
-
+    values.clear();
     streampos pos = findIndex(filesInfo, hourlyTimestamp);
     if(pos==0) return true;
 
-    return true;
+    filesInfo->data->Seekg(pos, std::ios::beg);
+    HourlyTimestamp_t dataTimestamp = filesInfo->data->ReadHourlyTimestamp();
+    if(dataTimestamp!=hourlyTimestamp) return false;
+    HourlyOffset_t offset;
+    float value;
+    while(filesInfo->data->ReadValue(&offset, &value))
+    {
+        if(offset==ENDLINE) break;
+        values.emplace_back(HourlyTimestamp::ToTimeT(dataTimestamp, offset), value);
+    }
+
+    return (offset==ENDLINE);
 }
 
 bool LightTSDB::ReadValues(const std::string& sensor, time_t hourBegin, time_t hourEnd, std::list<DataValue>& values)
@@ -200,6 +209,7 @@ bool LightTSDB::openFiles(LightTSDB::FilesInfo& filesInfo)
         return false;
     }
 
+    filesInfo.data->Clear();
     return true;
 }
 
@@ -364,9 +374,9 @@ streampos LightTSDB::findIndex(FilesInfo* filesInfo, HourlyTimestamp_t hourlyTim
     if(filesInfo->maxHour == filesInfo->minHour)
         pos = 0;
     else
-        pos = filesInfo->indexSize*(hourlyTimestamp-filesInfo->minHour)/(filesInfo->maxHour-filesInfo->minHour);
+        pos = filesInfo->indexSize*(hourlyTimestamp-filesInfo->minHour)/(filesInfo->maxHour-filesInfo->minHour+1);
 
-    pos = HEADER_SIZE+INDEX_STEP*(pos%INDEX_STEP);
+    pos = HEADER_SIZE+INDEX_STEP*(pos/INDEX_STEP);
 
     filesInfo->index->Seekg(pos, std::ios::beg);
     foundTimestamp = filesInfo->index->ReadHourlyTimestamp();
@@ -376,11 +386,11 @@ streampos LightTSDB::findIndex(FilesInfo* filesInfo, HourlyTimestamp_t hourlyTim
     {
         while(foundTimestamp != hourlyTimestamp)
         {
-            if(filesInfo->index->Seekg(sizeof(StreamOffset_t), std::ios::cur)) return 0;
+            if(filesInfo->index->Seekg(sizeof(streampos), std::ios::cur)) return 0;
             foundTimestamp = filesInfo->index->ReadHourlyTimestamp();
             if(foundTimestamp > hourlyTimestamp)  return 0;
         }
-        return return filesInfo->index->ReadStreamOffset();
+        return filesInfo->index->ReadStreamOffset();
     }
 
     if(foundTimestamp > hourlyTimestamp)
@@ -428,9 +438,9 @@ HourlyTimestamp_t HourlyTimestamp::FromTimeT(time_t time)
     return hourlyTimestamp;
 }
 
-time_t HourlyTimestamp::ToTimeT(HourlyTimestamp_t hourlyTimestamp)
+time_t HourlyTimestamp::ToTimeT(HourlyTimestamp_t hourlyTimestamp, HourlyOffset_t offset)
 {
-    time_t time = hourlyTimestamp*3600;
+    time_t time = hourlyTimestamp*3600+offset;
     return time;
 }
 
@@ -547,6 +557,17 @@ void LtsdbFile::Close()
     m_InternalFile.close();
 }
 
+void LtsdbFile::Clear()
+{
+    m_InternalFile.clear();
+}
+
+bool LtsdbFile::Seekp(streamoff off, ios_base::seekdir way)
+{
+    if(!m_InternalFile.seekp(off, way)) return false;
+    return true;
+}
+
 bool LtsdbFile::Seekg(streamoff off, ios_base::seekdir way)
 {
     if(!m_InternalFile.seekg(off, way)) return false;
@@ -644,6 +665,11 @@ bool LtsdbFile::FileExists(const string& fileName)
         return true;
     }
     return false;
+}
+
+bool LtsdbFile::Is_Open()
+{
+    return m_InternalFile.is_open();
 }
 
 #endif

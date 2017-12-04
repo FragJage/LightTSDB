@@ -13,7 +13,6 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-O2" />
-					<Add option="-pg" />
 					<Add option="-DWIN" />
 					<Add directory="src" />
 				</Compiler>
@@ -28,24 +27,22 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-O2" />
-					<Add option="-pg" />
 					<Add option="-g" />
 					<Add option="-DDEBUG" />
 					<Add option="-DWIN" />
 					<Add directory="src" />
 				</Compiler>
-				<Linker>
-					<Add option="-pg -lgmon" />
-				</Linker>
 			</Target>
 		</Build>
 		<Compiler>
-			<Add option="-Wall" />
 			<Add option="-std=c++11" />
+			<Add option="-Wall" />
+			<Add option="-pg" />
 			<Add option="-m32" />
 			<Add option="-fexceptions" />
 		</Compiler>
 		<Linker>
+			<Add option="-pg" />
 			<Add option="-m32" />
 		</Linker>
 		<Unit filename="src/LightTSDB.cpp" />
