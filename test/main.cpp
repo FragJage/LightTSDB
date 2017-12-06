@@ -8,7 +8,7 @@
 using namespace std;
 
 //TO DO List
-//Add read functions
+//Add resampling function
 //Add write value with time offset
 //Add uvw (wrapper for libuv)
 //Add compression
@@ -20,146 +20,144 @@ using namespace std;
 //Tool for rebuild index file
 //Tool for compress or uncompress file
 
-int main()
+vector<int> RandomIntervalTime;
+vector<time_t> RandomValuesTime;
+vector<float> RandomValuesTemp;
+vector<int> RandomOffset;
+int RandomReadSize = 500;
+string SensorName = "LucileBedRoomTemperature";
+
+void BuildRandomValues()
 {
-    string sensor = "LucileBedRoomTemperature";
-    int i,j,nb;
-    LightTSDB::LightTSDB myTSDB;
+    int nbmax = 1000000;
     float myTemp = 21.0;
     random_device rd;
     mt19937 gen(rd());
     uniform_int_distribution<int> rdSecond(15, 45);
     uniform_real_distribution<float> rdTemperature(-0.5, 0.5);
+    uniform_int_distribution<int> rdOffest(0, nbmax-RandomReadSize);
 
+    SetMockTime(2017, 11, 25, 13, 24, 36);
+    for(int i=0; i<nbmax; i++)
+    {
+        RandomIntervalTime.emplace_back(rdSecond(gen));
+        myTemp += rdTemperature(gen);
+        RandomValuesTemp.emplace_back(myTemp);
+        MockAddSecond(RandomIntervalTime[i]);
+        RandomValuesTime.emplace_back(time(0));
+    }
+    nbmax = (nbmax/RandomReadSize);
+    for(int i=0; i<nbmax; i++)
+    {
+        RandomOffset.emplace_back(rdOffest(gen));
+    }
 
+    SetMockTime(2017, 11, 25, 13, 24, 36);
+}
+
+void MeasureWritingTime()
+{
+    int i,nbok,nbmax;
+    LightTSDB::LightTSDB myTSDB;
 
     auto t0 = chrono::high_resolution_clock::now();
-    nb = 0;
-    for(j=0; j<1000; j++)
+    nbok = 0;
+    nbmax = RandomValuesTemp.size();
+    for(i=0; i<nbmax; i++)
     {
-        for(i=0; i<1000; i++)
+        MockAddSecond(RandomIntervalTime[i]);
+        if(!myTSDB.WriteValue(SensorName, RandomValuesTemp[i]))
         {
-            MockAddSecond(rdSecond(gen));
-            myTemp += rdTemperature(gen);
-            if(!myTSDB.WriteValue(sensor, myTemp))
-            {
-                cout << "Failed to write : " << myTSDB.GetLastError(sensor).ErrMessage << endl;
-                break;
-            }
-            else
-            {
-                nb++;
-            }
+            cout << "Failed to write : " << myTSDB.GetLastError(SensorName).ErrMessage << endl;
+            break;
         }
-        myTSDB.Close(sensor);
+        nbok++;
     }
     auto t1 = chrono::high_resolution_clock::now();
     chrono::duration<float> fs = t1 - t0;
-    cout << "Write " << nb << " temperatures in " << fs.count() << " s." << endl;
+    cout << "Write " << nbok << " temperatures in " << fs.count() << " s." << endl;
+}
 
+void MeasureContiguousReading()
+{
+    LightTSDB::LightTSDB myTSDB;
+    list<LightTSDB::DataValue> readValues;
 
-    int automate = 1;
-    LightTSDB::HourlyTimestamp_t hourlyTimestamp = 0;
-    vector<LightTSDB::DataValue> valuesOri;
-    list<LightTSDB::DataValue> valuesDst;
-
-    nb=0;
-    int bcl=16;
-    for(j=0; j<bcl; j++)
+    auto t0 = chrono::high_resolution_clock::now();
+    if(!myTSDB.ReadValues(SensorName, RandomValuesTime[0], RandomValuesTime[RandomValuesTime.size()-1], readValues))
     {
-        if(j==bcl/4) myTSDB.Close(sensor);
-        for(i=0; i<1000; i++)
-        {
-            MockAddSecond(rdSecond(gen));
-            myTemp += rdTemperature(gen);
+        cout << "ContiguousReading failed : " << myTSDB.GetLastError(SensorName).ErrMessage << endl;
+        return;
+    }
+    auto t1 = chrono::high_resolution_clock::now();
+    chrono::duration<float> fs = t1 - t0;
 
-            switch(automate)
-            {
-                case 1 :
-                    if((j==bcl/2)&&(i==0))
-                    {
-                        automate++;
-                        hourlyTimestamp = LightTSDB::HourlyTimestamp::FromTimeT(time(0));
-                    }
-                    break;
-                case 2 :
-                    if(hourlyTimestamp != LightTSDB::HourlyTimestamp::FromTimeT(time(0)))
-                    {
-                        automate++;
-                        hourlyTimestamp = LightTSDB::HourlyTimestamp::FromTimeT(time(0));
-                        time_t tt;
-                        time(&tt);
-                        cout << "Memo : " << LightTSDB::HourlyTimestamp::ToString(hourlyTimestamp) << endl;
-                        //cout << tt <<"->"<< myTemp << " ";
-                        valuesOri.emplace_back(tt, myTemp);
-                        nb++;
-                    }
-                    break;
-                case 3 :
-                    if(hourlyTimestamp == LightTSDB::HourlyTimestamp::FromTimeT(time(0)))
-                    {
-                        time_t tt;
-                        time(&tt);
-                        valuesOri.emplace_back(tt, myTemp);
-                        //cout << tt <<"->"<< myTemp << " ";
-                        nb++;
-                    }
-                    else
-                    {
-                        automate++;
-                        cout << "Nb values " << nb << endl;
-                    }
-                    break;
-            }
-            if(!myTSDB.WriteValue(sensor, myTemp))
-            {
-                cout << "Failed to write : " << myTSDB.GetLastError(sensor).ErrMessage << endl;
-                break;
-            }
+    int i = 0;
+    for (auto& x: readValues)
+    {
+        if((x.time != RandomValuesTime[i])||(x.value != RandomValuesTemp[i]))
+        {
+            cout << endl << "Error ContiguousReading : index " << i << endl;
+            cout << RandomValuesTime[i] << "->" << RandomValuesTemp[i] << endl;
+            break;
         }
+        i++;
     }
+    cout << "Contiguous read " << i << " temperatures in " << fs.count() << " s." << endl;
+}
 
-    if(!myTSDB.ReadValues(sensor, LightTSDB::HourlyTimestamp::ToTimeT(hourlyTimestamp), valuesDst))
+void MeasureRandomReading()
+{
+    LightTSDB::LightTSDB myTSDB;
+    list<LightTSDB::DataValue> readValues;
+    vector<int>::const_iterator it, itEnd;
+    chrono::duration<float> fs;
+    int i, nbok=0;
+
+    it = RandomOffset.begin();
+    itEnd = RandomOffset.end();
+    while(it!=itEnd)
     {
-        cout << "Failed to read1 : " << myTSDB.GetLastError(sensor).ErrMessage << endl;
-    }
-    else
-    {
-        cout << "Nb read " << valuesDst.size() << endl;
-        i = 0;
-        for (auto& x: valuesDst)
+        auto t0 = chrono::high_resolution_clock::now();
+        i = *it;
+        if(!myTSDB.ReadValues(SensorName, RandomValuesTime[i], RandomValuesTime[i+RandomReadSize-1], readValues))
         {
-            if((x.time != valuesOri[i].time)||(x.value != valuesOri[i].value))
+            cout << "RandomReading failed : " << myTSDB.GetLastError(SensorName).ErrMessage << endl;
+            return;
+        }
+        auto t1 = chrono::high_resolution_clock::now();
+        fs += (t1 - t0);
+
+        for (auto& x: readValues)
+        {
+            if((x.time != RandomValuesTime[i])||(x.value != RandomValuesTemp[i]))
             {
-                cout << endl << "Error reading1 : index " << i << endl;
-                cout << valuesOri[i].time << "->" << valuesOri[i].value << endl;
+                cout << endl << "Error RandomReading : index " << i << endl;
+                cout << RandomValuesTime[i] << "->" << RandomValuesTemp[i] << endl;
                 break;
             }
             i++;
+            nbok++;
         }
-        cout << i << " good reads" << endl;
-    }
-    myTSDB.Close(sensor);
-    if(!myTSDB.ReadValues(sensor, LightTSDB::HourlyTimestamp::ToTimeT(hourlyTimestamp), valuesDst))
-    {
-        cout << "Failed to read2 : " << myTSDB.GetLastError(sensor).ErrMessage << endl;
-    }
-    else
-    {
-        i = 0;
-        for (auto& x: valuesDst)
-        {
-            if((x.time != valuesOri[i].time)||(x.value != valuesOri[i].value))
-            {
-                cout << "Error reading2 : index " << i << endl;
-                break;
-            }
-            i++;
-        }
-        cout << i << " good reads" << endl;
+        ++it;
     }
 
-    myTSDB.Remove(sensor);
+    cout << "Random read " << nbok << " temperatures in " << fs.count() << " s." << endl;
+}
+
+void CleanUp()
+{
+    LightTSDB::LightTSDB myTSDB;
+    myTSDB.Remove(SensorName);
+}
+/// Core i7 - SSD - Mingw : 0.469 - 0.266 - 0.359
+int main()
+{
+    BuildRandomValues();
+    MeasureWritingTime();
+    MeasureContiguousReading();
+    MeasureRandomReading();
+    CleanUp();
 
     return 0;
 }

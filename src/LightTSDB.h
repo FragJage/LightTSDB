@@ -71,6 +71,7 @@
 #include <string>
 #include <map>
 #include <list>
+#include <vector>
 #include <ctime>
 #ifdef HAVE_LIBUV
     #include "uvw.hpp"
@@ -182,6 +183,16 @@ class LightTSDB
         /// \return   True if values are found
         bool ReadValues(const std::string& sensor, time_t hourBegin, time_t hourEnd, std::list<DataValue>& values);
 
+        /// \brief    Read and resample values into LightTSDB
+        /// \details  Read and resample values of a sensor into LightTSDB between two times with a reguler interval.
+        /// \param    sensor       Name of sensor
+        /// \param    hourBegin    Beginning hour
+        /// \param    hourEnd      Ending hour
+        /// \param    interval     Interval in seconds
+        /// \param    values       List of time/value
+        /// \return   True if values are found
+        bool ResampleValues(const std::string& sensor, time_t timeBegin, time_t timeEnd, std::list<DataValue>& values, int interval);
+
         /// \brief    Close LightTSDB files
         /// \details  Close LightTSDB files (data and index) for a sensor.
         /// \param    sensor       The sensor
@@ -251,6 +262,22 @@ class HourlyTimestamp
         static std::string ToString(HourlyTimestamp_t hourlyTimestamp);
     private:
         static int VerifyDataHourlyTimestamp(HourlyTimestamp_t hourIndex, std::streampos pos, LtsdbFile* pDataFile);
+};
+
+class ResamplingHelper
+{
+    public:
+        struct AverageValue
+        {
+            AverageValue() : time(), mini(0), maxi(0), average(0) {}
+            AverageValue(time_t t, float mi, float ma, float av) : time(t), mini(mi), maxi(ma), average(av) {}
+            time_t time;
+            float mini;
+            float maxi;
+            float average;
+        };
+        static void Average(time_t timeBegin, time_t timeEnd, const std::list<DataValue>& values, int interval, std::vector<AverageValue>& averages);
+        static void PreserveExtremum(const std::vector<AverageValue>& averages, std::list<DataValue>& values);
 };
 
 }

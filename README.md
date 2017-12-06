@@ -1,6 +1,6 @@
 LightTSDB
 =========
-Light time series database.
+Light time series database class.
 
 Introduction
 ============
@@ -8,8 +8,8 @@ This class store time series into the file system and can read float values by h
 
 Features  ... developpment in progress
 ========
- - (TO DO) Choice of the store folder
- - (TO DO) Indexed read
+ - Choice of the store folder
+ - Indexed read
  - (TO DO) Compressed file
  - (TO DO) Compile on Linux and Windows, Intel or ARM.
 

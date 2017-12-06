@@ -108,10 +108,56 @@ bool LightTSDB::ReadValues(const std::string& sensor, time_t hour, std::list<Dat
     return (offset==ENDLINE);
 }
 
-bool LightTSDB::ReadValues(const std::string& sensor, time_t hourBegin, time_t hourEnd, std::list<DataValue>& values)
+bool LightTSDB::ReadValues(const string& sensor, time_t timeBegin, time_t timeEnd, list<DataValue>& values)
 {
+    FilesInfo* filesInfo = getFilesInfo(sensor);
+    if(filesInfo == nullptr) return false;
+
+    HourlyTimestamp_t hourlyTimestamp = HourlyTimestamp::FromTimeT(timeBegin);
+    values.clear();
+    streampos pos = findIndex(filesInfo, hourlyTimestamp);
+    if(pos==0) return true;
+
+    filesInfo->data->Seekg(pos, std::ios::beg);
+    HourlyTimestamp_t dataTimestamp = filesInfo->data->ReadHourlyTimestamp();
+    if(dataTimestamp!=hourlyTimestamp) return false;
+
+    HourlyOffset_t offset;
+    float value;
+    time_t ts;
+    while(filesInfo->data->ReadValue(&offset, &value))
+    {
+        if(offset==ENDLINE)
+        {
+            dataTimestamp = filesInfo->data->ReadHourlyTimestamp();
+        }
+        else
+        {
+            ts = HourlyTimestamp::ToTimeT(dataTimestamp, offset);
+            if(ts>timeEnd) break;
+            if(ts>=timeBegin) values.emplace_back(ts, value);
+        }
+    }
     return true;
 }
+
+bool LightTSDB::ResampleValues(const string& sensor, time_t timeBegin, time_t timeEnd, list<DataValue>& values, int interval)
+{
+    list<DataValue> readValues;
+    vector<ResamplingHelper::AverageValue> averages;
+
+    if(!ReadValues(sensor, timeBegin, timeEnd, readValues))
+        return false;
+
+    values.clear();
+    if(readValues.size()==0) return true;
+
+    ResamplingHelper::Average(timeBegin, timeEnd, readValues, interval, averages);
+    ResamplingHelper::PreserveExtremum(averages, values);
+
+    return true;
+}
+
 
 bool LightTSDB::Close(const std::string& sensor)
 {
@@ -504,6 +550,90 @@ std::string HourlyTimestamp::ToString(HourlyTimestamp_t hourlyTimestamp)
 
 /**************************************************************************************************************/
 /***                                                                                                        ***/
+/*** Class ResamplingHelper                                                                                 ***/
+/***                                                                                                        ***/
+/**************************************************************************************************************/
+void ResamplingHelper::Average(time_t timeBegin, time_t timeEnd, const list<DataValue>& values, int interval, vector<AverageValue>& averages)
+{
+    averages.clear();
+    if(values.size()==0) return;
+
+    list<DataValue>::const_iterator it, itEnd;
+    time_t tBegin, tEnd, tLast;
+    float totValue, lastValue, minValue, maxValue;
+    bool found = false;
+
+    it = values.begin();
+    itEnd = values.end();
+    tBegin = timeBegin;
+    tEnd = tBegin+interval;
+    tLast = tBegin;
+    totValue = 0;
+    lastValue = it->value;
+    minValue = lastValue;
+    maxValue = lastValue;
+
+    while(it!=itEnd)
+    {
+        if(it->time<tEnd)
+        {
+            totValue += lastValue*(it->time-tLast);
+            lastValue = it->value;
+            tLast = it->time;
+            maxValue = max(maxValue, lastValue);
+            minValue = min(minValue, lastValue);
+            found = true;
+            it++;
+        }
+        if((found)&&((it->time>=tEnd)||(it==itEnd)))
+        {
+            totValue += lastValue*(tEnd-tLast);
+            averages.emplace_back(tBegin, minValue, maxValue, totValue/interval);
+            tBegin += interval;
+            tEnd += interval;
+            tLast = tBegin;
+            totValue = 0;
+            minValue = lastValue;
+            maxValue = lastValue;
+        }
+    }
+}
+
+void ResamplingHelper::PreserveExtremum(const vector<AverageValue>& averages, list<DataValue>& values)
+{
+    vector<AverageValue>::const_iterator it, itEnd;
+    int i = 0;
+    int aSize = averages.size();
+
+    it = averages.begin();
+    itEnd = averages.end();
+    values.clear();
+
+    while(it!=itEnd)
+    {
+        if((i==0)||(i==aSize))
+        {
+            values.emplace_back(it->time, it->average);
+        }
+        else if((averages[i-1].average>it->average)&&(it->average<averages[i+1].average))
+        {
+            values.emplace_back(it->time, it->mini);
+        }
+        else if((averages[i-1].average<it->average)&&(it->average>averages[i+1].average))
+        {
+            values.emplace_back(it->time, it->maxi);
+        }
+        else
+        {
+            values.emplace_back(it->time, it->average);
+        }
+        ++i;
+        ++it;
+    }
+}
+
+/**************************************************************************************************************/
+/***                                                                                                        ***/
 /*** Class LtsdbFile                                                                                        ***/
 /***                                                                                                        ***/
 /**************************************************************************************************************/
@@ -519,12 +649,12 @@ LtsdbFile::~LtsdbFile()
     m_InternalFile.close();
 }
 
-bool FileAbstract::Open(std::string fileName)
+bool LtsdbFile::Open(std::string fileName)
 {
     return m_InternalFile.openSync(fileName, O_CREAT | O_APPEND | O_RDWR, 0644);
 }
 
-void FileAbstract::Close()
+void LtsdbFile::Close()
 {
     m_InternalFile.closeSync();
 }
