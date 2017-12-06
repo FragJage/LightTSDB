@@ -4,6 +4,7 @@
 #include <vector>
 #include "LightTSDB.h"
 #include "TimeMock.h"
+#include "TestLtsdbFile.h"
 
 using namespace std;
 
@@ -150,7 +151,9 @@ void CleanUp()
     LightTSDB::LightTSDB myTSDB;
     myTSDB.Remove(SensorName);
 }
+
 /// Core i7 - SSD - Mingw : 0.469 - 0.266 - 0.359
+
 int main()
 {
     BuildRandomValues();
@@ -159,5 +162,21 @@ int main()
     MeasureRandomReading();
     CleanUp();
 
-    return 0;
+    int ret = 0;
+    UnitTest unitTest;
+
+    try
+    {
+        unitTest.addTestClass(new TestLtsdbFile());
+    }
+    catch(const exception &e)
+    {
+        unitTest.displayError(e.what());
+        ret = -1;
+    }
+
+    if(ret!=-1)
+        if(!unitTest.run()) ret = 1;
+
+    return ret;
 }

@@ -15,10 +15,8 @@
 					<Add option="-O2" />
 					<Add option="-DWIN" />
 					<Add directory="src" />
+					<Add directory="dependency" />
 				</Compiler>
-				<Linker>
-					<Add option="-pg -lgmon" />
-				</Linker>
 			</Target>
 			<Target title="Debug">
 				<Option output="bin/test" prefix_auto="1" extension_auto="1" />
@@ -35,18 +33,21 @@
 			</Target>
 		</Build>
 		<Compiler>
-			<Add option="-std=c++11" />
 			<Add option="-Wall" />
+			<Add option="-std=c++11" />
 			<Add option="-pg" />
 			<Add option="-m32" />
-			<Add option="-fexceptions" />
 		</Compiler>
 		<Linker>
 			<Add option="-pg" />
 			<Add option="-m32" />
 		</Linker>
+		<Unit filename="dependency/UnitTest/UnitTest.cpp" />
+		<Unit filename="dependency/UnitTest/UnitTest.h" />
 		<Unit filename="src/LightTSDB.cpp" />
 		<Unit filename="src/LightTSDB.h" />
+		<Unit filename="test/TestLtsdbFile.cpp" />
+		<Unit filename="test/TestLtsdbFile.h" />
 		<Unit filename="test/TimeMock.cpp" />
 		<Unit filename="test/TimeMock.h" />
 		<Unit filename="test/main.cpp" />
