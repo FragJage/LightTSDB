@@ -44,8 +44,13 @@
 		</Linker>
 		<Unit filename="dependency/UnitTest/UnitTest.cpp" />
 		<Unit filename="dependency/UnitTest/UnitTest.h" />
+		<Unit filename="dependency/UnitTest/termcolor.h" />
 		<Unit filename="src/LightTSDB.cpp" />
 		<Unit filename="src/LightTSDB.h" />
+		<Unit filename="test/TestHourlyTimestamp.cpp" />
+		<Unit filename="test/TestHourlyTimestamp.h" />
+		<Unit filename="test/TestLightTSDB.cpp" />
+		<Unit filename="test/TestLightTSDB.h" />
 		<Unit filename="test/TestLtsdbFile.cpp" />
 		<Unit filename="test/TestLtsdbFile.h" />
 		<Unit filename="test/TimeMock.cpp" />

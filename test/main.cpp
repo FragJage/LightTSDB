@@ -5,6 +5,8 @@
 #include "LightTSDB.h"
 #include "TimeMock.h"
 #include "TestLtsdbFile.h"
+#include "TestHourlyTimestamp.h"
+#include "TestLightTSDB.h"
 
 using namespace std;
 
@@ -157,6 +159,7 @@ void CleanUp()
 
 int main()
 {
+/*
     cout << termcolor::lightYellow << "- Speed measurement ---------------" << endl;
     BuildRandomValues();
     MeasureWritingTime();
@@ -164,13 +167,15 @@ int main()
     MeasureRandomReading();
     CleanUp();
     cout << endl;
-
+*/
     int ret = 0;
     UnitTest unitTest;
 
     try
     {
         unitTest.addTestClass(new TestLtsdbFile());
+        unitTest.addTestClass(new TestHourlyTimestamp());
+        unitTest.addTestClass(new TestLightTSDB());
     }
     catch(const exception &e)
     {

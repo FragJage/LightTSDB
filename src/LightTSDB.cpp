@@ -105,7 +105,7 @@ bool LightTSDB::ReadValues(const std::string& sensor, time_t hour, std::list<Dat
         values.emplace_back(HourlyTimestamp::ToTimeT(dataTimestamp, offset), value);
     }
 
-    return (offset==ENDLINE);
+    return true;
 }
 
 bool LightTSDB::ReadValues(const string& sensor, time_t timeBegin, time_t timeEnd, list<DataValue>& values)
