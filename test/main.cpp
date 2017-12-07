@@ -9,6 +9,7 @@
 using namespace std;
 
 //TO DO List
+//Add Unit tests
 //Add resampling function
 //Add write value with time offset
 //Add uvw (wrapper for libuv)
@@ -16,7 +17,7 @@ using namespace std;
 //Add Write Cache and Flush ?
 //Add Read Cache ?
 //Use state flag
-//Read/Write an others types
+//Read/Write an others types double, real, int ...
 //Tool for check data file
 //Tool for rebuild index file
 //Tool for compress or uncompress file
@@ -25,7 +26,7 @@ vector<int> RandomIntervalTime;
 vector<time_t> RandomValuesTime;
 vector<float> RandomValuesTemp;
 vector<int> RandomOffset;
-int RandomReadSize = 500;
+int RandomReadSize = 100;
 string SensorName = "LucileBedRoomTemperature";
 
 void BuildRandomValues()
@@ -69,14 +70,14 @@ void MeasureWritingTime()
         MockAddSecond(RandomIntervalTime[i]);
         if(!myTSDB.WriteValue(SensorName, RandomValuesTemp[i]))
         {
-            cout << "Failed to write : " << myTSDB.GetLastError(SensorName).ErrMessage << endl;
+            cout << termcolor::lightRed << "Failed to write : " << myTSDB.GetLastError(SensorName).ErrMessage << endl;
             break;
         }
         nbok++;
     }
     auto t1 = chrono::high_resolution_clock::now();
     chrono::duration<float> fs = t1 - t0;
-    cout << "Write " << nbok << " temperatures in " << fs.count() << " s." << endl;
+    cout << termcolor::lightWhite << "    Write " << nbok << " values              " << termcolor::lightGreen << fs.count() << " s." << endl;
 }
 
 void MeasureContiguousReading()
@@ -87,7 +88,7 @@ void MeasureContiguousReading()
     auto t0 = chrono::high_resolution_clock::now();
     if(!myTSDB.ReadValues(SensorName, RandomValuesTime[0], RandomValuesTime[RandomValuesTime.size()-1], readValues))
     {
-        cout << "ContiguousReading failed : " << myTSDB.GetLastError(SensorName).ErrMessage << endl;
+        cout << termcolor::lightRed << "ContiguousReading failed : " << myTSDB.GetLastError(SensorName).ErrMessage << endl;
         return;
     }
     auto t1 = chrono::high_resolution_clock::now();
@@ -98,13 +99,13 @@ void MeasureContiguousReading()
     {
         if((x.time != RandomValuesTime[i])||(x.value != RandomValuesTemp[i]))
         {
-            cout << endl << "Error ContiguousReading : index " << i << endl;
+            cout << endl << termcolor::lightRed << "Error ContiguousReading : index " << i << endl;
             cout << RandomValuesTime[i] << "->" << RandomValuesTemp[i] << endl;
             break;
         }
         i++;
     }
-    cout << "Contiguous read " << i << " temperatures in " << fs.count() << " s." << endl;
+    cout << termcolor::lightWhite<< "    Contiguous read " << i << " values    " << termcolor::lightGreen<< fs.count() << " s." << endl;
 }
 
 void MeasureRandomReading()
@@ -123,7 +124,7 @@ void MeasureRandomReading()
         i = *it;
         if(!myTSDB.ReadValues(SensorName, RandomValuesTime[i], RandomValuesTime[i+RandomReadSize-1], readValues))
         {
-            cout << "RandomReading failed : " << myTSDB.GetLastError(SensorName).ErrMessage << endl;
+            cout << termcolor::lightRed << "RandomReading failed : " << myTSDB.GetLastError(SensorName).ErrMessage << endl;
             return;
         }
         auto t1 = chrono::high_resolution_clock::now();
@@ -133,7 +134,7 @@ void MeasureRandomReading()
         {
             if((x.time != RandomValuesTime[i])||(x.value != RandomValuesTemp[i]))
             {
-                cout << endl << "Error RandomReading : index " << i << endl;
+                cout << endl << termcolor::lightRed << "Error RandomReading : index " << i << endl;
                 cout << RandomValuesTime[i] << "->" << RandomValuesTemp[i] << endl;
                 break;
             }
@@ -143,7 +144,7 @@ void MeasureRandomReading()
         ++it;
     }
 
-    cout << "Random read " << nbok << " temperatures in " << fs.count() << " s." << endl;
+    cout << termcolor::lightWhite << "    Random read " << nbok/RandomReadSize << "x" << RandomReadSize << " values      " << termcolor::lightGreen << fs.count() << " s." << endl;
 }
 
 void CleanUp()
@@ -156,11 +157,13 @@ void CleanUp()
 
 int main()
 {
+    cout << termcolor::lightYellow << "- Speed measurement ---------------" << endl;
     BuildRandomValues();
     MeasureWritingTime();
     MeasureContiguousReading();
     MeasureRandomReading();
     CleanUp();
+    cout << endl;
 
     int ret = 0;
     UnitTest unitTest;
