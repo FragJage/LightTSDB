@@ -57,14 +57,16 @@ bool LightTSDB::GetSensorList(list<string>& sensorList)
 {
     DIR *dir;
     struct dirent *ent;
+    string file;
 
     if((dir=opendir(m_Folder.c_str())) == nullptr) return false;
 
     sensorList.clear();
-    while((ent=readdir (dir)) != nullptr)
+    while((ent=readdir(dir)) != nullptr)
     {
-        ///Verif extention
-        sensorList.emplace_back(ent->d_name);
+        file = ent->d_name;
+        if(ends_with(file, ".data"))
+            sensorList.emplace_back(file);
     }
     closedir(dir);
     return true;
@@ -175,7 +177,7 @@ bool LightTSDB::ResampleValues(const string& sensor, time_t timeBegin, time_t ti
     values.clear();
     if(readValues.size()==0) return true;
 
-    ResamplingHelper::Average(timeBegin, timeEnd, readValues, interval, averages);
+    ResamplingHelper::Average(timeBegin, readValues, interval, averages);
     ResamplingHelper::PreserveExtremum(averages, values);
 
     return true;
@@ -496,6 +498,12 @@ LightTSDB::ErrorInfo LightTSDB::GetLastError(const string& sensor)
     return it->second;
 }
 
+inline bool LightTSDB::ends_with(string const& value, string const& ending)
+{
+    if (ending.size() > value.size()) return false;
+    return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
+}
+
 /**************************************************************************************************************/
 /***                                                                                                        ***/
 /*** Class HourlyTimestamp                                                                                  ***/
@@ -576,7 +584,7 @@ std::string HourlyTimestamp::ToString(HourlyTimestamp_t hourlyTimestamp)
 /*** Class ResamplingHelper                                                                                 ***/
 /***                                                                                                        ***/
 /**************************************************************************************************************/
-void ResamplingHelper::Average(time_t timeBegin, time_t timeEnd, const list<DataValue>& values, int interval, vector<AverageValue>& averages)
+void ResamplingHelper::Average(time_t timeBegin, const list<DataValue>& values, int interval, vector<AverageValue>& averages)
 {
     averages.clear();
     if(values.size()==0) return;

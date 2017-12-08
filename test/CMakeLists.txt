@@ -31,6 +31,10 @@ add_executable(
   unittest
   ${LightTSDB_files}
   ${UnitTest_files}
+  TimeMock.cpp
+  TestLtsdbFile.cpp
+  TestHourlyTimestamp.cpp
+  TestLightTSDB.cpp
   main.cpp
 )
 

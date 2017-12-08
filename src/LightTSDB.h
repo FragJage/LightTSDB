@@ -220,7 +220,7 @@ class LightTSDB
         struct FilesInfo
         {
             FilesInfo() : data(nullptr), index(nullptr), startHour(0), minHour(0), maxHour(0), indexSize(0), sensor(), version(0), type(FileDataType::Undefined), options(0) {}
-            FilesInfo(std::string sensor) : data(nullptr), index(nullptr), startHour(0), minHour(0), maxHour(0), indexSize(0), sensor(sensor), version(0), type(FileDataType::Undefined), options(0) {}
+            FilesInfo(std::string _sensor) : data(nullptr), index(nullptr), startHour(0), minHour(0), maxHour(0), indexSize(0), sensor(_sensor), version(0), type(FileDataType::Undefined), options(0) {}
             LtsdbFile* data;
             LtsdbFile* index;
             std::time_t startHour;
@@ -254,6 +254,8 @@ class LightTSDB
         bool checkState(const std::string& sensor, FileState state, FileType fileType);
         void setLastError(const std::string& sensor, const std::string& code, const std::string& errMessage, const std::string& sysMessage="");
 
+        bool ends_with(const std::string& value, const std::string& ending);
+
         std::string m_Folder;
         std::map<std::string, ErrorInfo> m_LastError;
         std::map<std::string, FilesInfo> m_FilesInfo;
@@ -282,7 +284,7 @@ class ResamplingHelper
             float maxi;
             float average;
         };
-        static void Average(time_t timeBegin, time_t timeEnd, const std::list<DataValue>& values, int interval, std::vector<AverageValue>& averages);
+        static void Average(time_t timeBegin, const std::list<DataValue>& values, int interval, std::vector<AverageValue>& averages);
         static void PreserveExtremum(const std::vector<AverageValue>& averages, std::list<DataValue>& values);
 };
 

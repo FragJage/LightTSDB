@@ -11,8 +11,10 @@
 using namespace std;
 
 //TO DO List
-//Add Unit tests
-//Add resampling function
+//Suppress extension in ListSensor function
+//Add Unit tests Resample class
+//Add Unit tests ListSensor function
+//Add read last value function
 //Add write value with time offset
 //Add uvw (wrapper for libuv)
 //Add compression
