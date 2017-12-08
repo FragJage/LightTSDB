@@ -19,6 +19,7 @@
 */
 /***************************************************************************************************/
 #include <cstring>      //for strerror
+#include <dirent.h>     //for opendir & readdir
 #include <sstream>
 #include "LightTSDB.h"
 
@@ -50,6 +51,23 @@ LightTSDB::~LightTSDB()
 void LightTSDB::SetFolder(const string& folder)
 {
     m_Folder = folder;
+}
+
+bool LightTSDB::GetSensorList(list<string>& sensorList)
+{
+    DIR *dir;
+    struct dirent *ent;
+
+    if((dir=opendir(m_Folder.c_str())) == nullptr) return false;
+
+    sensorList.clear();
+    while((ent=readdir (dir)) != nullptr)
+    {
+        ///Verif extention
+        sensorList.emplace_back(ent->d_name);
+    }
+    closedir(dir);
+    return true;
 }
 
 bool LightTSDB::WriteValue(const string& sensor, float value)
@@ -105,6 +123,8 @@ bool LightTSDB::ReadValues(const std::string& sensor, time_t hour, std::list<Dat
         values.emplace_back(HourlyTimestamp::ToTimeT(dataTimestamp, offset), value);
     }
 
+    if(offset!=ENDLINE) filesInfo->data->Clear();;
+
     return true;
 }
 
@@ -138,6 +158,9 @@ bool LightTSDB::ReadValues(const string& sensor, time_t timeBegin, time_t timeEn
             if(ts>=timeBegin) values.emplace_back(ts, value);
         }
     }
+
+    if(offset!=ENDLINE) filesInfo->data->Clear();;
+
     return true;
 }
 

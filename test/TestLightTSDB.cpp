@@ -96,6 +96,7 @@ bool TestLightTSDB::OpenDB()
 bool TestLightTSDB::ReadWithLimits()
 {
     int i;
+    float temp;
     time_t start;
     LightTSDB::LightTSDB myTSDB;
     list<LightTSDB::DataValue> values;
@@ -108,11 +109,15 @@ bool TestLightTSDB::ReadWithLimits()
     i = 0;
     it = values.begin();
     itEnd = values.end();
+    temp = 23;
     while(it!=itEnd)
     {
-        cout << it->value << " ";
-        //if(i < 6)
-        //assert(25-i*0.5==it->value);
+        if(i < 6)
+            temp -= 0.5;
+        else
+            temp += 0.5;
+
+        assert(temp==it->value);
         it++;
         i++;
     }
@@ -121,17 +126,47 @@ bool TestLightTSDB::ReadWithLimits()
 
 bool TestLightTSDB::ReadWithResample()
 {
-    return false;
+    time_t start;
+    float minVal, maxVal;
+    LightTSDB::LightTSDB myTSDB;
+    list<LightTSDB::DataValue> values;
+    list<LightTSDB::DataValue>::const_iterator it, itEnd;
+
+    start = m_start1-2*60-25;
+
+    assert(true==myTSDB.ResampleValues("MySensor", start, start+3600*4, values, 60*10));
+    it = values.begin();
+    itEnd = values.end();
+    minVal = 99;
+    maxVal = -99;
+    while(it!=itEnd)
+    {
+        minVal = min(minVal, it->value);
+        maxVal = max(maxVal, it->value);
+        it++;
+    }
+
+    assert(24==values.size());
+    assert(20==minVal);
+    assert(25==maxVal);
+    return true;
 }
 
 bool TestLightTSDB::Close()
 {
-    return false;
+    LightTSDB::LightTSDB myTSDB;
+
+    MockAddSecond(60*6);
+    assert(false==myTSDB.Close("MySensor"));
+    assert(true==myTSDB.WriteValue("MySensor", 22.5));
+    assert(true==myTSDB.Close("MySensor"));
+
+    return true;
 }
 
 bool TestLightTSDB::Remove()
 {
     LightTSDB::LightTSDB myTSDB;
     assert(true==myTSDB.Remove("MySensor"));
-    return false;
+    return true;
 }

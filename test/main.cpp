@@ -155,11 +155,11 @@ void CleanUp()
     myTSDB.Remove(SensorName);
 }
 
-/// Core i7 - SSD - Mingw : 0.469 - 0.266 - 0.359
+/// Intel Core i7 - SSD - Mingw : 0.469 - 0.266 - 0.359
+/// Celeron G540  - SSD - GCC   : 0.272 - 0.179 - 0.292
 
 int main()
 {
-/*
     cout << termcolor::lightYellow << "- Speed measurement ---------------" << endl;
     BuildRandomValues();
     MeasureWritingTime();
@@ -167,7 +167,7 @@ int main()
     MeasureRandomReading();
     CleanUp();
     cout << endl;
-*/
+
     int ret = 0;
     UnitTest unitTest;
 

@@ -24,10 +24,11 @@ bool TestHourlyTimestamp::FromTimeT()
     timeinfo.tm_hour = 5;
     timeinfo.tm_min = 0;
     timeinfo.tm_sec = 0;
+    timeinfo.tm_isdst = 0;
     timeT = mktime(&timeinfo);
 
     // timeT/3600 = 417435
-    assert(417435==LightTSDB::HourlyTimestamp::FromTimeT(timeT));
+    assert(417436==LightTSDB::HourlyTimestamp::FromTimeT(timeT));
 
     return true;
 }

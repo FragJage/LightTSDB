@@ -159,6 +159,12 @@ class LightTSDB
         /// \param    folder       The folder
         void SetFolder(const std::string& folder);
 
+        /// \brief    Sensors list into LightTSDB
+        /// \details  Get the list of the sensors created into LightTSDB.
+        /// \param    sensorList       List of sensors
+        /// \return   True if sensors are found
+        bool GetSensorList(std::list<std::string>& sensorList);
+
         /// \brief    Write value into LightTSDB
         /// \details  Add a new value of a sensor into LightTSDB at current time.
         /// \param    sensor       Name of sensor
