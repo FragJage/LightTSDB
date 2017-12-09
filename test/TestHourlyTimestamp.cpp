@@ -49,7 +49,13 @@ bool TestHourlyTimestamp::ToTimeT()
 bool TestHourlyTimestamp::ToString()
 {
     LightTSDB::HourlyTimestamp_t hourTS = 418651;   // => 2017/10/04 21h00
+    struct tm stime;
+    time_t ttime = time(nullptr);
 
+    localtime_r(&ttime, &stime);
+
+    cout << "isdst : " << stime.tm_isdst << endl;
+    cout << "Date : " << LightTSDB::HourlyTimestamp::ToString(hourTS) << endl;
     assert("2017/10/4 21h"==LightTSDB::HourlyTimestamp::ToString(hourTS));
 
     return true;
