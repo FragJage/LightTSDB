@@ -17,6 +17,7 @@ bool TestHourlyTimestamp::FromTimeT()
 {
     struct tm timeinfo;
     time_t timeT;
+    uint32_t nbHours;
 
     timeinfo.tm_year = 117;
     timeinfo.tm_mon = 7;
@@ -27,8 +28,8 @@ bool TestHourlyTimestamp::FromTimeT()
     timeinfo.tm_isdst = 0;
     timeT = mktime(&timeinfo);
 
-    // timeT/3600 = 417435
-    assert(417436==LightTSDB::HourlyTimestamp::FromTimeT(timeT));
+    nbHours = timeT/3600;
+    assert(nbHours==LightTSDB::HourlyTimestamp::FromTimeT(timeT));
 
     return true;
 }
