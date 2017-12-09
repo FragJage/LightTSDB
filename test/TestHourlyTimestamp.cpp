@@ -1,3 +1,4 @@
+#include <sstream>
 #include "TestHourlyTimestamp.h"
 
 using namespace std;
@@ -49,17 +50,14 @@ bool TestHourlyTimestamp::ToTimeT()
 bool TestHourlyTimestamp::ToString()
 {
     LightTSDB::HourlyTimestamp_t hourTS = 418651;   // => 2017/10/04 21h00
-    struct tm localTime;
-    struct tm gmTime;
-    time_t ttime = time(nullptr);
+    time_t ttime = LightTSDB::HourlyTimestamp::ToTimeT(hourTS);
+    struct tm stime;
+    ostringstream oss;
 
-    localtime_r(&ttime, &localTime);
-    gmtime_r(&ttime, &gmTime);
+    localtime_r(&ttime, &stime);
+    oss << "2017/10/4 " << stime.tm_hour << "h";
 
-    cout << "hr lc : " << localTime.tm_hour << endl;
-    cout << "hr gm : " << gmTime.tm_hour << endl;
-    cout << "Date : " << LightTSDB::HourlyTimestamp::ToString(hourTS) << endl;
-    assert("2017/10/4 21h"==LightTSDB::HourlyTimestamp::ToString(hourTS));
+    assert(oss.str()==LightTSDB::HourlyTimestamp::ToString(hourTS));
 
     return true;
 }
