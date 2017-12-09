@@ -796,7 +796,7 @@ bool LtsdbFile::WriteEndLine()
 bool LtsdbFile::ReadHeader(std::string* signature, uint8_t* version, FileDataType* type, uint8_t* options, FileState* state)
 {
     int sigSize = SIGNATURE.size();
-    char* charsig = new char[sigSize+1];
+    char charsig[sigSize+1];
 
     m_InternalFile.read(charsig, sigSize);
     charsig[sigSize] = 0;
