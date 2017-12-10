@@ -66,7 +66,7 @@ bool LightTSDB::GetSensorList(list<string>& sensorList)
     {
         file = ent->d_name;
         if(ends_with(file, ".data"))
-            sensorList.emplace_back(file);
+            sensorList.emplace_back(file.substr(0, file.size()-5));
     }
     closedir(dir);
     return true;
@@ -489,7 +489,7 @@ void LightTSDB::setLastError(const string& sensor, const string& code, const str
     m_LastError[sensor] = errorInfo;
 }
 
-LightTSDB::ErrorInfo LightTSDB::GetLastError(const string& sensor)
+ErrorInfo LightTSDB::GetLastError(const string& sensor)
 {
     ErrorInfo emptyInfo;
 

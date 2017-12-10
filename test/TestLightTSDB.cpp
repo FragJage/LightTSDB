@@ -10,10 +10,14 @@ TestLightTSDB::TestLightTSDB() : TestClass("LightTSDB", this)
 	addTest("ReadWithLimits", &TestLightTSDB::ReadWithLimits);
 	addTest("ReadWithResample", &TestLightTSDB::ReadWithResample);
 	addTest("Close", &TestLightTSDB::Close);
+	addTest("GetSensorList", &TestLightTSDB::GetSensorList);
+	addTest("CheckHeader", &TestLightTSDB::CheckHeader);
 	addTest("Remove", &TestLightTSDB::Remove);
 
     LightTSDB::LightTSDB myTSDB;
     if(myTSDB.Remove("MySensor"))
+        cout << termcolor::red << "Remove old data." << endl;
+    if(myTSDB.Remove("Sensor2"))
         cout << termcolor::red << "Remove old data." << endl;
 }
 
@@ -164,9 +168,53 @@ bool TestLightTSDB::Close()
     return true;
 }
 
+bool TestLightTSDB::GetSensorList()
+{
+    LightTSDB::LightTSDB myTSDB;
+    list<string> sensorList;
+
+    assert(true==myTSDB.WriteValue("Sensor2", 21.3));
+    assert(true==myTSDB.GetSensorList(sensorList));
+    assert(2==sensorList.size());
+
+    sensorList.sort();
+    list<string>::const_iterator it = sensorList.begin();
+    assert("MySensor"==(*it));
+    ++it;
+    assert("Sensor2"==*it);
+    return true;
+}
+
+bool TestLightTSDB::CheckHeader()
+{
+    LightTSDB::LightTSDB myTSDB;
+    LightTSDB::ErrorInfo myError;
+
+    myTSDB.SetFolder("test/data");
+
+    assert(false==myTSDB.WriteValue("SignDataErr", 21.3));
+    myError = myTSDB.GetLastError("SignDataErr");
+    assert("CHECK_SIG"==myError.Code);
+
+    assert(false==myTSDB.WriteValue("StateIndexErr", 21.3));
+    myError = myTSDB.GetLastError("StateIndexErr");
+    assert("CHECK_STA"==myError.Code);
+
+    assert(false==myTSDB.WriteValue("VersionDataErr", 21.3));
+    myError = myTSDB.GetLastError("VersionDataErr");
+    assert("CHECK_VER"==myError.Code);
+
+    assert(false==myTSDB.WriteValue("TypeIndexErr", 21.3));
+    myError = myTSDB.GetLastError("TypeIndexErr");
+    assert("OPEN_CHK1"==myError.Code);
+
+    return true;
+}
+
 bool TestLightTSDB::Remove()
 {
     LightTSDB::LightTSDB myTSDB;
     assert(true==myTSDB.Remove("MySensor"));
+    //assert(true==myTSDB.Remove("Sensor2"));
     return true;
 }

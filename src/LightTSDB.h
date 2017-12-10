@@ -100,6 +100,13 @@ struct DataValue
     float value;
 };
 
+struct ErrorInfo
+{
+    std::string Code;
+    std::string ErrMessage;
+    std::string SysMessage;
+};
+
 static const std::string SIGNATURE = "LTSDB";
 static const uint8_t VERSION = 1;
 static const uint16_t ENDLINE = 0XFFFE;
@@ -139,13 +146,6 @@ class LtsdbFile
 class LightTSDB
 {
     public:
-        struct ErrorInfo
-        {
-            std::string Code;
-            std::string ErrMessage;
-            std::string SysMessage;
-        };
-
         /// \brief    Constructor of LightTSDB
         /// \details  Constructor of LightTSDB.
         LightTSDB();

@@ -15,6 +15,8 @@ public:
     bool ReadWithLimits();
     bool ReadWithResample();
     bool Close();
+    bool GetSensorList();
+    bool CheckHeader();
     bool Remove();
 private:
     time_t m_start1;
