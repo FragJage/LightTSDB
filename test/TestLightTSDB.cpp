@@ -7,11 +7,14 @@ TestLightTSDB::TestLightTSDB() : TestClass("LightTSDB", this)
 {
 	addTest("CreateDB", &TestLightTSDB::CreateDB);
 	addTest("OpenDB", &TestLightTSDB::OpenDB);
+	addTest("WriteOldValue", &TestLightTSDB::WriteOldValue);
 	addTest("ReadWithLimits", &TestLightTSDB::ReadWithLimits);
 	addTest("ReadWithResample", &TestLightTSDB::ReadWithResample);
+	addTest("ReadLastValue", &TestLightTSDB::ReadLastValue);
 	addTest("Close", &TestLightTSDB::Close);
 	addTest("GetSensorList", &TestLightTSDB::GetSensorList);
 	addTest("CheckHeader", &TestLightTSDB::CheckHeader);
+	addTest("CheckFiles", &TestLightTSDB::CheckFiles);
 	addTest("Remove", &TestLightTSDB::Remove);
 
     LightTSDB::LightTSDB myTSDB;
@@ -97,6 +100,22 @@ bool TestLightTSDB::OpenDB()
     return true;
 }
 
+bool TestLightTSDB::WriteOldValue()
+{
+    LightTSDB::LightTSDB myTSDB;
+    LightTSDB::ErrorInfo myError;
+
+    SetMockTime(2017, 10, 24, 14, 1, 5);
+    assert(true==myTSDB.WriteValue("Sensor2", 21.3));
+    SetMockTime(2017, 10, 24, 14, 10, 5);
+    assert(true==myTSDB.WriteOldValue("Sensor2", 21.5, 500));
+    assert(false==myTSDB.WriteOldValue("Sensor2", 21.1, 700));
+    myError = myTSDB.GetLastError("Sensor2");
+    assert("WRITE_MRV"==myError.Code);
+
+    return true;
+}
+
 bool TestLightTSDB::ReadWithLimits()
 {
     int i;
@@ -156,6 +175,17 @@ bool TestLightTSDB::ReadWithResample()
     return true;
 }
 
+bool TestLightTSDB::ReadLastValue()
+{
+    LightTSDB::LightTSDB myTSDB;
+    LightTSDB::DataValue timeValue;
+
+    assert(true==myTSDB.ReadLastValue("Sensor2", timeValue));
+    assert(21.5==timeValue.value);
+
+    return true;
+}
+
 bool TestLightTSDB::Close()
 {
     LightTSDB::LightTSDB myTSDB;
@@ -173,7 +203,6 @@ bool TestLightTSDB::GetSensorList()
     LightTSDB::LightTSDB myTSDB;
     list<string> sensorList;
 
-    assert(true==myTSDB.WriteValue("Sensor2", 21.3));
     assert(true==myTSDB.GetSensorList(sensorList));
     assert(2==sensorList.size());
 
@@ -204,9 +233,23 @@ bool TestLightTSDB::CheckHeader()
     myError = myTSDB.GetLastError("VersionDataErr");
     assert("CHECK_VER"==myError.Code);
 
+    return true;
+}
+
+bool TestLightTSDB::CheckFiles()
+{
+    LightTSDB::LightTSDB myTSDB;
+    LightTSDB::ErrorInfo myError;
+
+    myTSDB.SetFolder("test/data");
+
     assert(false==myTSDB.WriteValue("TypeIndexErr", 21.3));
     myError = myTSDB.GetLastError("TypeIndexErr");
     assert("OPEN_CHK1"==myError.Code);
+
+    assert(false==myTSDB.WriteValue("LostIndex", 21.3));
+    myError = myTSDB.GetLastError("LostIndex");
+    assert("OPEN_NDX2"==myError.Code);
 
     return true;
 }
@@ -215,6 +258,6 @@ bool TestLightTSDB::Remove()
 {
     LightTSDB::LightTSDB myTSDB;
     assert(true==myTSDB.Remove("MySensor"));
-    //assert(true==myTSDB.Remove("Sensor2"));
+    assert(true==myTSDB.Remove("Sensor2"));
     return true;
 }

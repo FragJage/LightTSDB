@@ -12,11 +12,14 @@ public:
 
     bool CreateDB();
     bool OpenDB();
+    bool WriteOldValue();
     bool ReadWithLimits();
     bool ReadWithResample();
+    bool ReadLastValue();
     bool Close();
     bool GetSensorList();
     bool CheckHeader();
+    bool CheckFiles();
     bool Remove();
 private:
     time_t m_start1;
