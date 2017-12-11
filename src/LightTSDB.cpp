@@ -74,20 +74,41 @@ bool LightTSDB::GetSensorList(list<string>& sensorList)
 
 bool LightTSDB::WriteValue(const string& sensor, float value)
 {
-    FilesInfo* filesInfo;
-    time_t now;
-
-
+    FilesInfo* filesInfo = getFilesInfo(sensor);
     filesInfo = getFilesInfo(sensor);
     if(filesInfo == nullptr) return false;
 
+    time_t now;
     time(&now);
+    return writeTimeValue(filesInfo, value, now);
+}
 
-    if(difftime(now, filesInfo->startHour)>3599)
+bool LightTSDB::WriteOldValue(const std::string& sensor, float value, uint32_t offset)
+{
+    FilesInfo* filesInfo = getFilesInfo(sensor);
+    filesInfo = getFilesInfo(sensor);
+    if(filesInfo == nullptr) return false;
+
+    time_t oldTime;
+    time(&oldTime);
+    oldTime -= offset;
+
+    if(oldTime <= HourlyTimestamp::ToTimeT(filesInfo->maxHour, filesInfo->maxOffset))
+    {
+        setLastError(sensor, "WRITE_MRV", "There is a more recent value.");
+        return false;
+    }
+
+    return writeTimeValue(filesInfo, value, oldTime);
+}
+
+bool LightTSDB::writeTimeValue(FilesInfo* filesInfo, float value, time_t timestamp)
+{
+    if(difftime(timestamp, filesInfo->startHour)>3599)
     {
         if(filesInfo->startHour>0) filesInfo->data->WriteEndLine();
 
-        HourlyTimestamp_t hourlyTimestamp = HourlyTimestamp::FromTimeT(now);
+        HourlyTimestamp_t hourlyTimestamp = HourlyTimestamp::FromTimeT(timestamp);
         filesInfo->startHour = HourlyTimestamp::ToTimeT(hourlyTimestamp);
         filesInfo->index->WriteHourlyTimestamp(hourlyTimestamp);
         filesInfo->index->WriteStreamOffset(filesInfo->data->Tellp());
@@ -98,8 +119,9 @@ bool LightTSDB::WriteValue(const string& sensor, float value)
         filesInfo->maxHour = hourlyTimestamp;
     }
 
-    HourlyOffset_t offset = difftime(now, filesInfo->startHour);
+    HourlyOffset_t offset = difftime(timestamp, filesInfo->startHour);
     if(!filesInfo->data->WriteValue(offset, value)) return false;
+    filesInfo->maxOffset = offset;
 
     return true;
 }
@@ -117,6 +139,7 @@ bool LightTSDB::ReadValues(const std::string& sensor, time_t hour, std::list<Dat
     filesInfo->data->Seekg(pos, std::ios::beg);
     HourlyTimestamp_t dataTimestamp = filesInfo->data->ReadHourlyTimestamp();
     if(dataTimestamp!=hourlyTimestamp) return false;
+
     HourlyOffset_t offset;
     float value;
     while(filesInfo->data->ReadValue(&offset, &value))
@@ -163,6 +186,32 @@ bool LightTSDB::ReadValues(const string& sensor, time_t timeBegin, time_t timeEn
 
     if(offset!=ENDLINE) filesInfo->data->Clear();;
 
+    return true;
+}
+
+bool LightTSDB::ReadLastValue(const string& sensor, DataValue& dataValue)
+{
+    FilesInfo* filesInfo = getFilesInfo(sensor);
+    if(filesInfo == nullptr) return false;
+
+    streampos pos = findIndex(filesInfo, filesInfo->maxHour);
+    if(pos==0) return true;
+
+    filesInfo->data->Seekg(pos, std::ios::beg);
+    HourlyTimestamp_t dataTimestamp = filesInfo->data->ReadHourlyTimestamp();
+    if(dataTimestamp!=filesInfo->maxHour) return false;
+
+    HourlyOffset_t offset;
+    float value;
+
+    filesInfo->data->Seekg(0, std::ios::end);
+    pos = filesInfo->data->Tellg();
+    pos -= (sizeof(float)+sizeof(HourlyOffset_t));
+    filesInfo->data->Seekg(pos, std::ios::beg);
+    filesInfo->data->ReadValue(&offset, &value);
+    dataValue.time = HourlyTimestamp::ToTimeT(filesInfo->maxHour, offset);
+    dataValue.value = value;
+    filesInfo->data->Seekg(0, std::ios::end);
     return true;
 }
 
@@ -288,6 +337,9 @@ bool LightTSDB::openDataFile(FilesInfo& filesInfo)
 {
     string signature;
     FileState fileState;
+    streampos pos;
+    float value;
+    HourlyOffset_t offset;
 
     filesInfo.data = new LtsdbFile();
     if(!filesInfo.data->Open(getFileName(filesInfo.sensor, FileType::data)))
@@ -303,6 +355,12 @@ bool LightTSDB::openDataFile(FilesInfo& filesInfo)
     }
     if(!checkHeader(filesInfo.sensor, signature, filesInfo.version, fileState, FileType::data)) return false;
 
+    filesInfo.data->Seekg(0, std::ios::end);
+    pos = filesInfo.data->Tellg();
+    pos -= (sizeof(float)+sizeof(HourlyOffset_t));
+    filesInfo.data->ReadValue(&offset, &value);
+    filesInfo.maxOffset = offset;
+    filesInfo.data->Clear();
     filesInfo.data->Seekg(0, std::ios::end);
     return true;
 }
