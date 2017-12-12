@@ -1,7 +1,9 @@
 [![Build Status](https://travis-ci.org/FragJage/LightTSDB.svg?branch=master)](https://travis-ci.org/FragJage/LightTSDB)
-[![Coverage Status](https://coveralls.io/repos/github/FragJage/LightTSDB/badge.svg?branch=master&bust=0)](https://coveralls.io/github/FragJage/LightTSDB?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/FragJage/LightTSDB/badge.svg?branch=master&bust=1)](https://coveralls.io/github/FragJage/LightTSDB?branch=master)
 [![Coverity Scan Build](https://scan.coverity.com/projects/13257/badge.svg)](https://scan.coverity.com/projects/13257)
-#LightTSDB
+
+LightTSDB
+=========
 Light time series database class.
 
 Introduction
