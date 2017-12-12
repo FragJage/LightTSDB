@@ -172,6 +172,14 @@ class LightTSDB
         /// \return   True if value is write
         bool WriteValue(const std::string& sensor, float value);
 
+        /// \brief    Write old value into LightTSDB
+        /// \details  Add a new value of a sensor into LightTSDB at old time. (Only if none more recent value are wrote)
+        /// \param    sensor       Name of sensor
+        /// \param    value        Value of sensor
+        /// \param    offset       Offset time in seconds
+        /// \return   True if value is write
+        bool WriteOldValue(const std::string& sensor, float value, uint32_t offset);
+
         /// \brief    Read values into LightTSDB
         /// \details  Read all values of a sensor into LightTSDB for an hour.
         /// \param    sensor       Name of sensor
@@ -188,6 +196,13 @@ class LightTSDB
         /// \param    values       List of time/value
         /// \return   True if values are found
         bool ReadValues(const std::string& sensor, time_t hourBegin, time_t hourEnd, std::list<DataValue>& values);
+
+        /// \brief    Read last value into LightTSDB
+        /// \details  Read last value of a sensor into LightTSDB.
+        /// \param    sensor       Name of sensor
+        /// \param    value        Time/value struct
+        /// \return   True if values are found
+        bool ReadLastValue(const std::string& sensor, DataValue& value);
 
         /// \brief    Read and resample values into LightTSDB
         /// \details  Read and resample values of a sensor into LightTSDB between two times with a reguler interval.
@@ -219,13 +234,14 @@ class LightTSDB
     private:
         struct FilesInfo
         {
-            FilesInfo() : data(nullptr), index(nullptr), startHour(0), minHour(0), maxHour(0), indexSize(0), sensor(), version(0), type(FileDataType::Undefined), options(0) {}
-            FilesInfo(std::string _sensor) : data(nullptr), index(nullptr), startHour(0), minHour(0), maxHour(0), indexSize(0), sensor(_sensor), version(0), type(FileDataType::Undefined), options(0) {}
+            FilesInfo() : data(nullptr), index(nullptr), startHour(0), minHour(0), maxHour(0), maxOffset(0), indexSize(0), sensor(), version(0), type(FileDataType::Undefined), options(0) {}
+            FilesInfo(std::string _sensor) : data(nullptr), index(nullptr), startHour(0), minHour(0), maxHour(0), maxOffset(0), indexSize(0), sensor(_sensor), version(0), type(FileDataType::Undefined), options(0) {}
             LtsdbFile* data;
             LtsdbFile* index;
             std::time_t startHour;
             HourlyTimestamp_t minHour;
             HourlyTimestamp_t maxHour;
+            HourlyOffset_t maxOffset;
             std::streampos indexSize;
             std::string sensor;
             uint8_t version;
@@ -246,6 +262,7 @@ class LightTSDB
         bool openIndexFile(FilesInfo& filesInfo);
         bool createFiles(FilesInfo& filesInfo);
 
+        bool writeTimeValue(FilesInfo* filesInfo, float value, time_t timestamp);
         std::streampos findIndex(FilesInfo* filesInfo, HourlyTimestamp_t hourlyTimestamp);
 
         bool checkHeader(const std::string& sensor, const std::string& signature, uint8_t version, FileState state, FileType fileType);
@@ -266,10 +283,10 @@ class HourlyTimestamp
     public:
         static HourlyTimestamp_t FromTimeT(time_t time);
         static time_t ToTimeT(HourlyTimestamp_t hourlyTimestamp, HourlyOffset_t offset=0);
-        static HourlyTimestamp_t ReadLastIndex(LtsdbFile* pIndexFile, LtsdbFile* pDataFile);
+        static int ReadLastIndex(time_t& startHour, LtsdbFile* data, LtsdbFile* index);
         static std::string ToString(HourlyTimestamp_t hourlyTimestamp);
     private:
-        static int VerifyDataHourlyTimestamp(HourlyTimestamp_t hourIndex, std::streampos pos, LtsdbFile* pDataFile);
+        static int VerifyDataHourlyTimestamp(HourlyTimestamp_t hourIndex, std::streampos pos, LtsdbFile* data);
 };
 
 class ResamplingHelper

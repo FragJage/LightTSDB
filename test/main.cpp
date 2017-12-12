@@ -11,11 +11,7 @@
 using namespace std;
 
 //TO DO List
-//Suppress extension in ListSensor function
-//Add Unit tests Resample class
-//Add Unit tests ListSensor function
-//Add read last value function
-//Add write value with time offset
+//Increase code coverage on error OPEN_CORx
 //Add uvw (wrapper for libuv)
 //Add compression
 //Add Write Cache and Flush ?

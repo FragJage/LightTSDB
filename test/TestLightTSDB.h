@@ -12,12 +12,16 @@ public:
 
     bool CreateDB();
     bool OpenDB();
+    bool WriteOldValue();
     bool ReadWithLimits();
     bool ReadWithResample();
+    bool ReadLastValue();
     bool Close();
     bool IndexSearch();
     bool GetSensorList();
     bool CheckHeader();
+    bool CheckFiles();
+    bool CheckDate();
     bool Remove();
 private:
     time_t m_start1;
