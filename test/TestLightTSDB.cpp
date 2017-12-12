@@ -15,6 +15,7 @@ TestLightTSDB::TestLightTSDB() : TestClass("LightTSDB", this)
 	addTest("GetSensorList", &TestLightTSDB::GetSensorList);
 	addTest("CheckHeader", &TestLightTSDB::CheckHeader);
 	addTest("CheckFiles", &TestLightTSDB::CheckFiles);
+	addTest("CheckDate", &TestLightTSDB::CheckDate);
 	addTest("Remove", &TestLightTSDB::Remove);
 
     LightTSDB::LightTSDB myTSDB;
@@ -172,6 +173,11 @@ bool TestLightTSDB::ReadWithResample()
     assert(24==values.size());
     assert(20==minVal);
     assert(25==maxVal);
+
+
+    assert(true==myTSDB.ResampleValues("MySensor", start+3600*10, start+3600*11, values, 60));
+    assert(0==values.size());
+
     return true;
 }
 
@@ -250,6 +256,24 @@ bool TestLightTSDB::CheckFiles()
     assert(false==myTSDB.WriteValue("LostIndex", 21.3));
     myError = myTSDB.GetLastError("LostIndex");
     assert("OPEN_NDX2"==myError.Code);
+
+    return true;
+}
+
+bool TestLightTSDB::CheckDate()
+{
+    LightTSDB::LightTSDB myTSDB;
+    LightTSDB::ErrorInfo myError;
+
+    myTSDB.SetFolder("test/data");
+
+    assert(false==myTSDB.WriteValue("CorruptDate", 21.3));
+    myError = myTSDB.GetLastError("CorruptDate");
+    assert("OPEN_COR1"==myError.Code);
+
+    assert(false==myTSDB.WriteValue("TooNewDate", 21.3));
+    myError = myTSDB.GetLastError("TooNewDate");
+    assert("OPEN_COR2"==myError.Code);
 
     return true;
 }

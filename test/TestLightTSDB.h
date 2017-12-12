@@ -20,6 +20,7 @@ public:
     bool GetSensorList();
     bool CheckHeader();
     bool CheckFiles();
+    bool CheckDate();
     bool Remove();
 private:
     time_t m_start1;
