@@ -11,13 +11,12 @@
 using namespace std;
 
 //TO DO List
-//Increase code coverage on error OPEN_CORx
-//Add uvw (wrapper for libuv)
+//Read/Write an others types double, real, int ...
 //Add compression
+//Use state flag
+//Add uvw (wrapper for libuv)
 //Add Write Cache and Flush ?
 //Add Read Cache ?
-//Use state flag
-//Read/Write an others types double, real, int ...
 //Tool for check data file
 //Tool for rebuild index file
 //Tool for compress or uncompress file

@@ -175,7 +175,6 @@ bool TestLightTSDB::ReadWithResample()
     assert(20==minVal);
     assert(25==maxVal);
 
-
     assert(true==myTSDB.ResampleValues("MySensor", start+3600*10, start+3600*11, values, 60));
     assert(0==values.size());
 
@@ -211,7 +210,7 @@ bool TestLightTSDB::IndexSearch()
     list<LightTSDB::DataValue> values;
     time_t start;
 
-    SetMockTime(2017, 10, 24, 14, 2, 7);
+    SetMockTime(2017, 10, 25, 14, 2, 7);
     time(&start);
     assert(true==myTSDB.WriteValue("Sensor2", 21.3));
     assert(true==myTSDB.ReadValues("Sensor2", start, values));
@@ -221,12 +220,12 @@ bool TestLightTSDB::IndexSearch()
     MockAddSecond(3600);
     assert(true==myTSDB.WriteValue("Sensor2", 21.2));
     MockAddSecond(3600*3);
-    assert(true==myTSDB.WriteValue("Sensor2", 21.1));
+    assert(true==myTSDB.WriteValue("Sensor2", 21.5));
     MockAddSecond(3600);
     assert(true==myTSDB.WriteValue("Sensor2", 21.0));
-    assert(true==myTSDB.ReadValues("Sensor2", start+3600*3, values));
+    assert(true==myTSDB.ReadValues("Sensor2", start+3600*4, values));
     assert(1==values.size());
-    assert(21.0==values.begin()->value);
+    assert(21.5==values.begin()->value);
 
     return true;
 }
