@@ -18,6 +18,8 @@
     along with LightTSDB.  If not, see <http://www.gnu.org/licenses/>.
 */
 /***************************************************************************************************/
+#include <iostream>
+
 #include <cstring>      //for strerror
 #include <dirent.h>     //for opendir & readdir
 #include <sstream>
@@ -455,6 +457,7 @@ streampos LightTSDB::findIndex(FilesInfo* filesInfo, HourlyTimestamp_t hourlyTim
 
     if(foundTimestamp < hourlyTimestamp)
     {
+cout << "Decal" << endl;
         while(foundTimestamp != hourlyTimestamp)
         {
             if(filesInfo->index->Seekg(sizeof(streampos), std::ios::cur)) return 0;
@@ -466,6 +469,7 @@ streampos LightTSDB::findIndex(FilesInfo* filesInfo, HourlyTimestamp_t hourlyTim
 
     if(foundTimestamp > hourlyTimestamp)
     {
+cout << "Decal" << endl;
         while(foundTimestamp != hourlyTimestamp)
         {
             if(filesInfo->index->Seekg(-(INDEX_STEP+sizeof(HourlyTimestamp_t)), std::ios::cur))  return 0;

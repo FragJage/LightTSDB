@@ -15,6 +15,7 @@ public:
     bool ReadWithLimits();
     bool ReadWithResample();
     bool Close();
+    bool IndexSearch();
     bool GetSensorList();
     bool CheckHeader();
     bool Remove();

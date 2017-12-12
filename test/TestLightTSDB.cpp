@@ -10,6 +10,7 @@ TestLightTSDB::TestLightTSDB() : TestClass("LightTSDB", this)
 	addTest("ReadWithLimits", &TestLightTSDB::ReadWithLimits);
 	addTest("ReadWithResample", &TestLightTSDB::ReadWithResample);
 	addTest("Close", &TestLightTSDB::Close);
+	addTest("IndexSearch", &TestLightTSDB::IndexSearch);
 	addTest("GetSensorList", &TestLightTSDB::GetSensorList);
 	addTest("CheckHeader", &TestLightTSDB::CheckHeader);
 	addTest("Remove", &TestLightTSDB::Remove);
@@ -168,12 +169,37 @@ bool TestLightTSDB::Close()
     return true;
 }
 
+bool TestLightTSDB::IndexSearch()
+{
+    LightTSDB::LightTSDB myTSDB;
+    list<LightTSDB::DataValue> values;
+    time_t start;
+
+    SetMockTime(2017, 10, 24, 14, 2, 7);
+    time(&start);
+    assert(true==myTSDB.WriteValue("Sensor2", 21.3));
+    assert(true==myTSDB.ReadValues("Sensor2", start, values));
+    assert(1==values.size());
+    assert(true==myTSDB.ReadValues("Sensor2", start+3600, values));
+    assert(0==values.size());
+    MockAddSecond(3600);
+    assert(true==myTSDB.WriteValue("Sensor2", 21.2));
+    MockAddSecond(3600*3);
+    assert(true==myTSDB.WriteValue("Sensor2", 21.1));
+    MockAddSecond(3600);
+    assert(true==myTSDB.WriteValue("Sensor2", 21.0));
+    assert(true==myTSDB.ReadValues("Sensor2", start+3600*3, values));
+    assert(1==values.size());
+    assert(21.0==values.begin()->value);
+
+    return true;
+}
+
 bool TestLightTSDB::GetSensorList()
 {
     LightTSDB::LightTSDB myTSDB;
     list<string> sensorList;
 
-    assert(true==myTSDB.WriteValue("Sensor2", 21.3));
     assert(true==myTSDB.GetSensorList(sensorList));
     assert(2==sensorList.size());
 
