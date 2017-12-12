@@ -75,7 +75,6 @@ bool LightTSDB::GetSensorList(list<string>& sensorList)
 bool LightTSDB::WriteValue(const string& sensor, float value)
 {
     FilesInfo* filesInfo = getFilesInfo(sensor);
-    filesInfo = getFilesInfo(sensor);
     if(filesInfo == nullptr) return false;
 
     time_t now;
@@ -86,7 +85,6 @@ bool LightTSDB::WriteValue(const string& sensor, float value)
 bool LightTSDB::WriteOldValue(const std::string& sensor, float value, uint32_t offset)
 {
     FilesInfo* filesInfo = getFilesInfo(sensor);
-    filesInfo = getFilesInfo(sensor);
     if(filesInfo == nullptr) return false;
 
     time_t oldTime;
@@ -311,19 +309,16 @@ std::string LightTSDB::getFileExt(FileType fileType)
 
 bool LightTSDB::openFiles(LightTSDB::FilesInfo& filesInfo)
 {
-    HourlyTimestamp_t hourlyTimestamp;
-
     if(!openDataFile(filesInfo)) return false;
     if(!openIndexFile(filesInfo)) return false;
 
-    hourlyTimestamp = HourlyTimestamp::ReadLastIndex(filesInfo.index, filesInfo.data);
-    filesInfo.startHour = HourlyTimestamp::ToTimeT(hourlyTimestamp);
-    if(filesInfo.startHour == -1)
+    int res = HourlyTimestamp::ReadLastIndex(filesInfo.startHour, filesInfo.data, filesInfo.index);
+    if(res==-1)
     {
         setLastError(filesInfo.sensor, "OPEN_COR1", "Index file is corrupt.");
         return false;
     }
-    if(filesInfo.startHour == -2)
+    if(res==-2)
     {
         setLastError(filesInfo.sensor, "OPEN_COR2", "Data file is corrupt.");
         return false;
@@ -579,49 +574,49 @@ time_t HourlyTimestamp::ToTimeT(HourlyTimestamp_t hourlyTimestamp, HourlyOffset_
     return time;
 }
 
-HourlyTimestamp_t HourlyTimestamp::ReadLastIndex(LtsdbFile* pIndexFile, LtsdbFile* pDataFile)
+int HourlyTimestamp::ReadLastIndex(time_t& startHour, LtsdbFile* data, LtsdbFile* index)
 {
     streampos pos;
     HourlyTimestamp_t hourIndex;
 
-    pIndexFile->Seekg(0, std::ios::end);
-    pos = pIndexFile->Tellg();
+    index->Seekg(0, std::ios::end);
+    pos = index->Tellg();
     pos -= (sizeof(hourIndex)+sizeof(streampos));
-    pIndexFile->Seekg(pos, std::ios::beg);
-    hourIndex = pIndexFile->ReadHourlyTimestamp();
-    pos = pIndexFile->ReadStreamOffset();
-    pIndexFile->Seekg(0, std::ios::end);
+    index->Seekg(pos, std::ios::beg);
+    hourIndex = index->ReadHourlyTimestamp();
+    pos = index->ReadStreamOffset();
+    index->Seekg(0, std::ios::end);
 
-    int ret = VerifyDataHourlyTimestamp(hourIndex, pos, pDataFile);
-    if(ret<0) return ret;
+    int res = VerifyDataHourlyTimestamp(hourIndex, pos, data);
+    if(res!=0) return res;
 
-    return hourIndex;
+    startHour = HourlyTimestamp::ToTimeT(hourIndex);
+    return 0;
 }
 
-int HourlyTimestamp::VerifyDataHourlyTimestamp(HourlyTimestamp_t hourIndex, streampos pos, LtsdbFile* pDataFile)
+int HourlyTimestamp::VerifyDataHourlyTimestamp(HourlyTimestamp_t hourIndex, streampos pos, LtsdbFile* data)
 {
     HourlyTimestamp_t hourData;
 
-    pDataFile->Seekg(pos, std::ios::beg);
-    hourData = pDataFile->ReadHourlyTimestamp();
+    data->Seekg(pos, std::ios::beg);
+    hourData = data->ReadHourlyTimestamp();
     if(hourData!=hourIndex) return -1;
 
     HourlyOffset_t offset;
     HourlyOffset_t offsetMax = 0;
     float value;
 
-    while(pDataFile->ReadValue(&offset, &value)==true)
+    while(data->ReadValue(&offset, &value)==true)
     {
         if(offset==ENDLINE) break;
         offsetMax = offset;
     }
 
-    time_t tMax = HourlyTimestamp::ToTimeT(hourData)+offsetMax;
+    time_t tMax = HourlyTimestamp::ToTimeT(hourData, offsetMax);
     time_t tCur = time(0);
-
     if(tMax>tCur) return -2;
 
-    pDataFile->Seekg(0, std::ios::end);
+    data->Seekg(0, std::ios::end);
     return 0;
 }
 

@@ -283,10 +283,10 @@ class HourlyTimestamp
     public:
         static HourlyTimestamp_t FromTimeT(time_t time);
         static time_t ToTimeT(HourlyTimestamp_t hourlyTimestamp, HourlyOffset_t offset=0);
-        static HourlyTimestamp_t ReadLastIndex(LtsdbFile* pIndexFile, LtsdbFile* pDataFile);
+        static int ReadLastIndex(time_t& startHour, LtsdbFile* data, LtsdbFile* index);
         static std::string ToString(HourlyTimestamp_t hourlyTimestamp);
     private:
-        static int VerifyDataHourlyTimestamp(HourlyTimestamp_t hourIndex, std::streampos pos, LtsdbFile* pDataFile);
+        static int VerifyDataHourlyTimestamp(HourlyTimestamp_t hourIndex, std::streampos pos, LtsdbFile* data);
 };
 
 class ResamplingHelper
