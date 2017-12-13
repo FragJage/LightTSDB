@@ -80,7 +80,7 @@ bool TestLtsdbFile::RWValue()
 
 
     assert(true==myFile.Open("./testRWValue.dat"));
-    assert(true==myFile.WriteValue(writeHo, writeValue));
+    assert(true==myFile.WriteValue(writeHo, &writeValue, sizeof(float)));
     assert(true==myFile.WriteEndLine());
     myFile.Seekg(0, std::ios::beg);
     assert(true==myFile.ReadValue(&readHo, &readValue));

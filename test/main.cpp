@@ -157,6 +157,7 @@ void CleanUp()
 
 int main()
 {
+    /*
     cout << termcolor::lightYellow << "- Speed measurement ---------------" << endl;
     BuildRandomValues();
     MeasureWritingTime();
@@ -184,4 +185,23 @@ int main()
         if(!unitTest.run()) ret = 1;
 
     return ret;
+    */
+
+    LightTSDB::LightTSDB myTSDB;
+
+    int ival = 1234567898;
+    myTSDB.WriteValue("SensorInt", ival);
+    myTSDB.Remove("SensorInt");
+
+    double dval = 2.123456789;
+    myTSDB.WriteValue("SensorDouble", dval);
+    myTSDB.Remove("SensorDouble");
+
+    bool bval = true;
+    myTSDB.WriteValue("SensorBool", bval);
+    myTSDB.Remove("SensorBool");
+
+    float fval = 1234.567898;
+    myTSDB.WriteValue("SensorFloat", fval);
+    myTSDB.Remove("SensorLong");
 }

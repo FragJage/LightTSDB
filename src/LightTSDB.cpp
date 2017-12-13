@@ -72,9 +72,33 @@ bool LightTSDB::GetSensorList(list<string>& sensorList)
     return true;
 }
 
-bool LightTSDB::WriteValue(const string& sensor, float value)
+template<>
+bool LightTSDB::WriteValue<float>(const string& sensor, float value)
 {
-    FilesInfo* filesInfo = getFilesInfo(sensor);
+    return internalWriteValue(sensor, &value, FileDataType::Float);
+}
+
+template<>
+bool LightTSDB::WriteValue<int>(const string& sensor, int value)
+{
+    return internalWriteValue(sensor, &value, FileDataType::Int);
+}
+
+template<>
+bool LightTSDB::WriteValue<double>(const string& sensor, double value)
+{
+    return internalWriteValue(sensor, &value, FileDataType::Double);
+}
+
+template<>
+bool LightTSDB::WriteValue<bool>(const string& sensor, bool value)
+{
+    return internalWriteValue(sensor, &value, FileDataType::Bool);
+}
+
+bool LightTSDB::internalWriteValue(const string& sensor, void* value, FileDataType valueType)
+{
+    FilesInfo* filesInfo = getFilesInfo(sensor, valueType);
     if(filesInfo == nullptr) return false;
 
     time_t now;
@@ -84,7 +108,7 @@ bool LightTSDB::WriteValue(const string& sensor, float value)
 
 bool LightTSDB::WriteOldValue(const std::string& sensor, float value, uint32_t offset)
 {
-    FilesInfo* filesInfo = getFilesInfo(sensor);
+    FilesInfo* filesInfo = getFilesInfo(sensor, FileDataType::Float);
     if(filesInfo == nullptr) return false;
 
     time_t oldTime;
@@ -97,10 +121,10 @@ bool LightTSDB::WriteOldValue(const std::string& sensor, float value, uint32_t o
         return false;
     }
 
-    return writeTimeValue(filesInfo, value, oldTime);
+    return writeTimeValue(filesInfo, &value, oldTime);
 }
 
-bool LightTSDB::writeTimeValue(FilesInfo* filesInfo, float value, time_t timestamp)
+bool LightTSDB::writeTimeValue(FilesInfo* filesInfo, void* pValue, time_t timestamp)
 {
     if(difftime(timestamp, filesInfo->startHour)>3599)
     {
@@ -118,7 +142,7 @@ bool LightTSDB::writeTimeValue(FilesInfo* filesInfo, float value, time_t timesta
     }
 
     HourlyOffset_t offset = difftime(timestamp, filesInfo->startHour);
-    if(!filesInfo->data->WriteValue(offset, value)) return false;
+    if(!filesInfo->data->WriteValue(offset, pValue, getValueSize(filesInfo->type))) return false;
     filesInfo->maxOffset = offset;
 
     return true;
@@ -126,7 +150,7 @@ bool LightTSDB::writeTimeValue(FilesInfo* filesInfo, float value, time_t timesta
 
 bool LightTSDB::ReadValues(const std::string& sensor, time_t hour, std::list<DataValue>& values)
 {
-    FilesInfo* filesInfo = getFilesInfo(sensor);
+    FilesInfo* filesInfo = getFilesInfo(sensor, FileDataType::Float);
     if(filesInfo == nullptr) return false;
 
     HourlyTimestamp_t hourlyTimestamp = HourlyTimestamp::FromTimeT(hour);
@@ -153,7 +177,7 @@ bool LightTSDB::ReadValues(const std::string& sensor, time_t hour, std::list<Dat
 
 bool LightTSDB::ReadValues(const string& sensor, time_t timeBegin, time_t timeEnd, list<DataValue>& values)
 {
-    FilesInfo* filesInfo = getFilesInfo(sensor);
+    FilesInfo* filesInfo = getFilesInfo(sensor, FileDataType::Float);
     if(filesInfo == nullptr) return false;
 
     HourlyTimestamp_t hourlyTimestamp = HourlyTimestamp::FromTimeT(timeBegin);
@@ -189,7 +213,7 @@ bool LightTSDB::ReadValues(const string& sensor, time_t timeBegin, time_t timeEn
 
 bool LightTSDB::ReadLastValue(const string& sensor, DataValue& dataValue)
 {
-    FilesInfo* filesInfo = getFilesInfo(sensor);
+    FilesInfo* filesInfo = getFilesInfo(sensor, FileDataType::Float);
     if(filesInfo == nullptr) return false;
 
     streampos pos = findIndex(filesInfo, filesInfo->maxHour);
@@ -260,32 +284,40 @@ bool LightTSDB::Remove(const std::string& sensor)
     return ret;
 }
 
-LightTSDB::FilesInfo* LightTSDB::getFilesInfo(const string& sensor)
+LightTSDB::FilesInfo* LightTSDB::getFilesInfo(const string& sensor, FileDataType valueType)
 {
     map<string,FilesInfo>::iterator it = m_FilesInfo.find(sensor);
-    if(it != m_FilesInfo.end()) return &(it->second);
-
-    FilesInfo filesInfo(sensor);
-
-    if(LtsdbFile::FileExists(getFileName(sensor, data)))
+    if(it == m_FilesInfo.end())
     {
-        if(!openFiles(filesInfo))
+        FilesInfo filesInfo(sensor);
+
+        if(LtsdbFile::FileExists(getFileName(sensor, data)))
         {
-            cleanUp(&filesInfo);
-            return nullptr;
+            if(!openFiles(filesInfo))
+            {
+                cleanUp(&filesInfo);
+                return nullptr;
+            }
         }
-    }
-    else
-    {
-        if(!createFiles(filesInfo))
+        else
         {
-            cleanUp(&filesInfo);
-            return nullptr;
+            if(!createFiles(filesInfo, valueType))
+            {
+                cleanUp(&filesInfo);
+                return nullptr;
+            }
         }
+
+        m_FilesInfo[sensor] = filesInfo;
+        it = m_FilesInfo.find(sensor);
     }
 
-    m_FilesInfo[sensor] = filesInfo;
-    return &(m_FilesInfo[sensor]);
+    if(it->second.type!=valueType)
+    {
+        setLastError(sensor, "MISMATCH", "Type mismatch between value and LightTSDB data file.");
+        return nullptr;
+    }
+    return &(it->second);
 }
 
 string LightTSDB::getFileName(const string& sensor, LightTSDB::FileType fileType)
@@ -402,7 +434,7 @@ bool LightTSDB::openIndexFile(FilesInfo& filesInfo)
     return true;
 }
 
-bool LightTSDB::createFiles(LightTSDB::FilesInfo& filesInfo)
+bool LightTSDB::createFiles(LightTSDB::FilesInfo& filesInfo, FileDataType valueType)
 {
     filesInfo.data = new LtsdbFile();
     if(!filesInfo.data->Open(getFileName(filesInfo.sensor, data)))
@@ -410,7 +442,7 @@ bool LightTSDB::createFiles(LightTSDB::FilesInfo& filesInfo)
         setLastError(filesInfo.sensor, "CREATE_DAT1", "Unable to create data file.", strerror(errno));
         return false;
     }
-    if(!filesInfo.data->WriteHeader(SIGNATURE, VERSION, FileDataType::Float, 0, FileState::Stable))
+    if(!filesInfo.data->WriteHeader(SIGNATURE, VERSION, valueType, 0, FileState::Stable))
     {
         setLastError(filesInfo.sensor, "CREATE_DAT2", "Unable to write header of data file.", strerror(errno));
         return false;
@@ -422,12 +454,13 @@ bool LightTSDB::createFiles(LightTSDB::FilesInfo& filesInfo)
         setLastError(filesInfo.sensor, "CREATE_NDX1", "Unable to create index file.", strerror(errno));
         return false;
     }
-    if(!filesInfo.index->WriteHeader(SIGNATURE, VERSION, FileDataType::Float, 0, FileState::Stable))
+    if(!filesInfo.index->WriteHeader(SIGNATURE, VERSION, valueType, 0, FileState::Stable))
     {
         setLastError(filesInfo.sensor, "CREATE_NDX2", "Unable to write header of index file.", strerror(errno));
         return false;
     }
 
+    filesInfo.type = valueType;
     filesInfo.startHour = 0;
 
     return true;
@@ -557,6 +590,24 @@ inline bool LightTSDB::ends_with(string const& value, string const& ending)
 {
     if (ending.size() > value.size()) return false;
     return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
+}
+
+int LightTSDB::getValueSize(FileDataType valueType)
+{
+    switch(valueType)
+    {
+        case FileDataType::Undefined :
+            return 0;
+        case FileDataType::Float :
+            return sizeof(float);
+        case FileDataType::Int :
+            return sizeof(int);
+        case FileDataType::Double :
+            return sizeof(double);
+        case FileDataType::Bool :
+            return sizeof(bool);
+    }
+    return 0;
 }
 
 /**************************************************************************************************************/
@@ -835,10 +886,10 @@ bool LtsdbFile::ReadValue(HourlyOffset_t* offset, float* value)
     return m_InternalFile.good();
 }
 
-bool LtsdbFile::WriteValue(HourlyOffset_t offset, float value)
+bool LtsdbFile::WriteValue(HourlyOffset_t offset, void* pValue, int valueSize)
 {
     m_InternalFile.write(reinterpret_cast<const char *>(&offset), sizeof(HourlyOffset_t));
-    m_InternalFile.write(reinterpret_cast<const char *>(&value), sizeof(float));
+    m_InternalFile.write(reinterpret_cast<const char *>(pValue), valueSize);
     return m_InternalFile.good();
 }
 

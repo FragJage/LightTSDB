@@ -90,7 +90,7 @@ namespace LightTSDB {
 typedef uint32_t HourlyTimestamp_t;
 typedef uint16_t HourlyOffset_t;
 enum FileState : uint8_t { Stable, Busy };
-enum FileDataType : uint8_t { Undefined, Float };
+enum FileDataType : uint8_t { Undefined, Float, Int, Double, Bool };
 
 struct DataValue
 {
@@ -132,7 +132,7 @@ class LtsdbFile
         bool WriteHourlyTimestamp(HourlyTimestamp_t hourlyTimestamp);
         HourlyTimestamp_t ReadHourlyTimestamp();
         bool ReadValue(HourlyOffset_t* offset, float* value);
-        bool WriteValue(HourlyOffset_t offset, float value);
+        bool WriteValue(HourlyOffset_t offset, void* pValue, int valueSize);
         bool WriteEndLine();
         bool ReadHeader(std::string* signature, uint8_t* version, FileDataType* type, uint8_t* options, FileState* state);
         bool WriteHeader(std::string signature, const uint8_t version, const FileDataType type, const uint8_t options, const FileState state);
@@ -170,7 +170,8 @@ class LightTSDB
         /// \param    sensor       Name of sensor
         /// \param    value        Value of sensor
         /// \return   True if value is write
-        bool WriteValue(const std::string& sensor, float value);
+        template<typename T>
+        bool WriteValue(const std::string& sensor, T value);
 
         /// \brief    Write old value into LightTSDB
         /// \details  Add a new value of a sensor into LightTSDB at old time. (Only if none more recent value are wrote)
@@ -254,15 +255,16 @@ class LightTSDB
         std::string getFileName(const std::string& sensor, const FileType fileType);
         std::string getFileExt(const FileType fileType);
 
-        FilesInfo* getFilesInfo(const std::string& sensor);
+        FilesInfo* getFilesInfo(const std::string& sensor, FileDataType valueType);
         void cleanUp(FilesInfo* pFileInfo);
 
         bool openFiles(FilesInfo& filesInfo);
         bool openDataFile(FilesInfo& filesInfo);
         bool openIndexFile(FilesInfo& filesInfo);
-        bool createFiles(FilesInfo& filesInfo);
+        bool createFiles(FilesInfo& filesInfo, FileDataType valueType);
 
-        bool writeTimeValue(FilesInfo* filesInfo, float value, time_t timestamp);
+        bool internalWriteValue(const std::string& sensor, void* value, FileDataType valueType);
+        bool writeTimeValue(FilesInfo* filesInfo, void* pValue, time_t timestamp);
         std::streampos findIndex(FilesInfo* filesInfo, HourlyTimestamp_t hourlyTimestamp);
 
         bool checkHeader(const std::string& sensor, const std::string& signature, uint8_t version, FileState state, FileType fileType);
@@ -272,6 +274,7 @@ class LightTSDB
         void setLastError(const std::string& sensor, const std::string& code, const std::string& errMessage, const std::string& sysMessage="");
 
         bool ends_with(const std::string& value, const std::string& ending);
+        int getValueSize(FileDataType valueType);
 
         std::string m_Folder;
         std::map<std::string, ErrorInfo> m_LastError;
