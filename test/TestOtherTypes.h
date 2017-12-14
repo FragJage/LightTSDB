@@ -16,4 +16,7 @@ public:
     bool ReadInt();
     bool WriteDouble();
     bool ReadDouble();
+
+private:
+    time_t m_LastTime;
 };

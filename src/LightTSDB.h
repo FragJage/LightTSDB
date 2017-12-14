@@ -138,7 +138,7 @@ class LtsdbFile
         std::streampos ReadStreamOffset();
         bool WriteHourlyTimestamp(HourlyTimestamp_t hourlyTimestamp);
         HourlyTimestamp_t ReadHourlyTimestamp();
-        bool ReadValue(HourlyOffset_t* offset, float* value);
+        bool ReadValue(HourlyOffset_t* offset, void* pValue, int valueSize);
         bool WriteValue(HourlyOffset_t offset, void* pValue, int valueSize);
         bool WriteEndLine();
         bool ReadHeader(std::string* signature, uint8_t* version, FileDataType* type, uint8_t* options, FileState* state);
@@ -295,10 +295,10 @@ class HourlyTimestamp
     public:
         static HourlyTimestamp_t FromTimeT(time_t time);
         static time_t ToTimeT(HourlyTimestamp_t hourlyTimestamp, HourlyOffset_t offset=0);
-        static int ReadLastIndex(time_t& startHour, LtsdbFile* data, LtsdbFile* index);
+        static int ReadLastIndex(time_t& startHour, LtsdbFile* data, LtsdbFile* index, int valueSize);
         static std::string ToString(HourlyTimestamp_t hourlyTimestamp);
     private:
-        static int VerifyDataHourlyTimestamp(HourlyTimestamp_t hourIndex, std::streampos pos, LtsdbFile* data);
+        static int VerifyDataHourlyTimestamp(HourlyTimestamp_t hourIndex, std::streampos pos, LtsdbFile* data, int valueSize);
 };
 
 class ResamplingHelper

@@ -158,7 +158,6 @@ void CleanUp()
 
 int main()
 {
-/*
     cout << termcolor::lightYellow << "- Speed measurement ---------------" << endl;
     BuildRandomValues();
     MeasureWritingTime();
@@ -166,7 +165,7 @@ int main()
     MeasureRandomReading();
     CleanUp();
     cout << endl;
-*/
+
     int ret = 0;
     UnitTest unitTest;
 

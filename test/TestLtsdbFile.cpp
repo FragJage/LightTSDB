@@ -76,17 +76,17 @@ bool TestLtsdbFile::RWValue()
     LightTSDB::HourlyOffset_t writeHo = 1583;
     float writeValue = 25.45;
     LightTSDB::HourlyOffset_t readHo;
-    float readValue;
+    LightTSDB::UValue readValue;
 
 
     assert(true==myFile.Open("./testRWValue.dat"));
     assert(true==myFile.WriteValue(writeHo, &writeValue, sizeof(float)));
     assert(true==myFile.WriteEndLine());
     myFile.Seekg(0, std::ios::beg);
-    assert(true==myFile.ReadValue(&readHo, &readValue));
+    assert(true==myFile.ReadValue(&readHo, &readValue, sizeof(float)));
     assert(writeHo==readHo);
-    assert(writeValue==readValue);
-    assert(true==myFile.ReadValue(&readHo, &readValue));
+    assert(writeValue==readValue.Float);
+    assert(true==myFile.ReadValue(&readHo, &readValue, sizeof(float)));
     assert(LightTSDB::ENDLINE==readHo);
     myFile.Close();
     assert(0==remove("./testRWValue.dat"));
