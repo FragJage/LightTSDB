@@ -106,22 +106,46 @@ bool LightTSDB::internalWriteValue(const string& sensor, void* value, FileDataTy
     return writeTimeValue(filesInfo, value, now);
 }
 
-bool LightTSDB::WriteOldValue(const std::string& sensor, float value, uint32_t offset)
+template<>
+bool LightTSDB::WriteOldValue<float>(const std::string& sensor, float value, uint32_t offset)
 {
-    FilesInfo* filesInfo = getFilesInfo(sensor, FileDataType::Float);
+    return internalWriteOldValue(sensor, &value, offset, FileDataType::Float);
+}
+
+template<>
+bool LightTSDB::WriteOldValue<int>(const std::string& sensor, int value, uint32_t offset)
+{
+    return internalWriteOldValue(sensor, &value, offset, FileDataType::Int);
+}
+
+template<>
+bool LightTSDB::WriteOldValue<double>(const std::string& sensor, double value, uint32_t offset)
+{
+    return internalWriteOldValue(sensor, &value, offset, FileDataType::Double);
+}
+
+template<>
+bool LightTSDB::WriteOldValue<bool>(const std::string& sensor, bool value, uint32_t offset)
+{
+    return internalWriteOldValue(sensor, &value, offset, FileDataType::Bool);
+}
+
+bool LightTSDB::internalWriteOldValue(const std::string& sensor, void* pValue, uint32_t offset, FileDataType valueType)
+{
+    FilesInfo* filesInfo = getFilesInfo(sensor, valueType);
     if(filesInfo == nullptr) return false;
 
     time_t oldTime;
     time(&oldTime);
     oldTime -= offset;
 
-    if(oldTime <= HourlyTimestamp::ToTimeT(filesInfo->maxHour, filesInfo->maxOffset))
+    if((filesInfo->maxHour>0)&&(oldTime <= HourlyTimestamp::ToTimeT(filesInfo->maxHour, filesInfo->maxOffset)))
     {
         setLastError(sensor, "WRITE_MRV", "There is a more recent value.");
         return false;
     }
 
-    return writeTimeValue(filesInfo, &value, oldTime);
+    return writeTimeValue(filesInfo, pValue, oldTime);
 }
 
 bool LightTSDB::writeTimeValue(FilesInfo* filesInfo, void* pValue, time_t timestamp)
@@ -164,10 +188,12 @@ bool LightTSDB::ReadValues(const std::string& sensor, time_t hour, std::list<Dat
 
     HourlyOffset_t offset;
     float value;
+    UValue uvalue;
     while(filesInfo->data->ReadValue(&offset, &value))
     {
         if(offset==ENDLINE) break;
-        values.emplace_back(HourlyTimestamp::ToTimeT(dataTimestamp, offset), value);
+        uvalue.Float = value;
+        values.emplace_back(HourlyTimestamp::ToTimeT(dataTimestamp, offset), uvalue);
     }
 
     if(offset!=ENDLINE) filesInfo->data->Clear();;
@@ -191,6 +217,7 @@ bool LightTSDB::ReadValues(const string& sensor, time_t timeBegin, time_t timeEn
 
     HourlyOffset_t offset;
     float value;
+    UValue uvalue;
     time_t ts;
     while(filesInfo->data->ReadValue(&offset, &value))
     {
@@ -202,7 +229,8 @@ bool LightTSDB::ReadValues(const string& sensor, time_t timeBegin, time_t timeEn
         {
             ts = HourlyTimestamp::ToTimeT(dataTimestamp, offset);
             if(ts>timeEnd) break;
-            if(ts>=timeBegin) values.emplace_back(ts, value);
+            uvalue.Float = value;
+            if(ts>=timeBegin) values.emplace_back(ts, uvalue);
         }
     }
 
@@ -232,7 +260,7 @@ bool LightTSDB::ReadLastValue(const string& sensor, DataValue& dataValue)
     filesInfo->data->Seekg(pos, std::ios::beg);
     filesInfo->data->ReadValue(&offset, &value);
     dataValue.time = HourlyTimestamp::ToTimeT(filesInfo->maxHour, offset);
-    dataValue.value = value;
+    dataValue.value.Float = value;
     filesInfo->data->Seekg(0, std::ios::end);
     return true;
 }
@@ -381,7 +409,6 @@ bool LightTSDB::openDataFile(FilesInfo& filesInfo)
         return false;
     }
     if(!checkHeader(filesInfo.sensor, signature, filesInfo.version, fileState, FileType::data)) return false;
-
     filesInfo.data->Seekg(0, std::ios::end);
     pos = filesInfo.data->Tellg();
     pos -= (sizeof(float)+sizeof(HourlyOffset_t));
@@ -706,7 +733,7 @@ void ResamplingHelper::Average(time_t timeBegin, const list<DataValue>& values, 
     tEnd = tBegin+interval;
     tLast = tBegin;
     totValue = 0;
-    lastValue = it->value;
+    lastValue = it->value.Float;
     minValue = lastValue;
     maxValue = lastValue;
 
@@ -715,7 +742,7 @@ void ResamplingHelper::Average(time_t timeBegin, const list<DataValue>& values, 
         if(it->time<tEnd)
         {
             totValue += lastValue*(it->time-tLast);
-            lastValue = it->value;
+            lastValue = it->value.Float;
             tLast = it->time;
             maxValue = max(maxValue, lastValue);
             minValue = min(minValue, lastValue);
@@ -741,6 +768,7 @@ void ResamplingHelper::PreserveExtremum(const vector<AverageValue>& averages, li
     vector<AverageValue>::const_iterator it, itEnd;
     int i = 0;
     int aSize = averages.size();
+    UValue uvalue;
 
     it = averages.begin();
     itEnd = averages.end();
@@ -750,19 +778,23 @@ void ResamplingHelper::PreserveExtremum(const vector<AverageValue>& averages, li
     {
         if((i==0)||(i==aSize))
         {
-            values.emplace_back(it->time, it->average);
+            uvalue.Float = it->average;
+            values.emplace_back(it->time, uvalue);
         }
         else if((averages[i-1].average>it->average)&&(it->average<averages[i+1].average))
         {
-            values.emplace_back(it->time, it->mini);
+            uvalue.Float = it->mini;
+            values.emplace_back(it->time, uvalue);
         }
         else if((averages[i-1].average<it->average)&&(it->average>averages[i+1].average))
         {
-            values.emplace_back(it->time, it->maxi);
+            uvalue.Float = it->maxi;
+            values.emplace_back(it->time, uvalue);
         }
         else
         {
-            values.emplace_back(it->time, it->average);
+            uvalue.Float = it->average;
+            values.emplace_back(it->time, uvalue);
         }
         ++i;
         ++it;

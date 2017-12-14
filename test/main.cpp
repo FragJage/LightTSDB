@@ -7,11 +7,12 @@
 #include "TestLtsdbFile.h"
 #include "TestHourlyTimestamp.h"
 #include "TestLightTSDB.h"
+#include "TestOtherTypes.h"
 
 using namespace std;
 
 //TO DO List
-//Read/Write an others types double, real, int ...
+//Read/Write an others types double, bool, int ...
 //Add compression
 //Use state flag
 //Add uvw (wrapper for libuv)
@@ -96,7 +97,7 @@ void MeasureContiguousReading()
     int i = 0;
     for (auto& x: readValues)
     {
-        if((x.time != RandomValuesTime[i])||(x.value != RandomValuesTemp[i]))
+        if((x.time != RandomValuesTime[i])||(x.value.Float != RandomValuesTemp[i]))
         {
             cout << endl << termcolor::lightRed << "Error ContiguousReading : index " << i << endl;
             cout << RandomValuesTime[i] << "->" << RandomValuesTemp[i] << endl;
@@ -131,7 +132,7 @@ void MeasureRandomReading()
 
         for (auto& x: readValues)
         {
-            if((x.time != RandomValuesTime[i])||(x.value != RandomValuesTemp[i]))
+            if((x.time != RandomValuesTime[i])||(x.value.Float != RandomValuesTemp[i]))
             {
                 cout << endl << termcolor::lightRed << "Error RandomReading : index " << i << endl;
                 cout << RandomValuesTime[i] << "->" << RandomValuesTemp[i] << endl;
@@ -157,7 +158,7 @@ void CleanUp()
 
 int main()
 {
-    /*
+/*
     cout << termcolor::lightYellow << "- Speed measurement ---------------" << endl;
     BuildRandomValues();
     MeasureWritingTime();
@@ -165,7 +166,7 @@ int main()
     MeasureRandomReading();
     CleanUp();
     cout << endl;
-
+*/
     int ret = 0;
     UnitTest unitTest;
 
@@ -174,6 +175,7 @@ int main()
         unitTest.addTestClass(new TestLtsdbFile());
         unitTest.addTestClass(new TestHourlyTimestamp());
         unitTest.addTestClass(new TestLightTSDB());
+        unitTest.addTestClass(new TestOtherTypes());
     }
     catch(const exception &e)
     {
@@ -185,23 +187,4 @@ int main()
         if(!unitTest.run()) ret = 1;
 
     return ret;
-    */
-
-    LightTSDB::LightTSDB myTSDB;
-
-    int ival = 1234567898;
-    myTSDB.WriteValue("SensorInt", ival);
-    myTSDB.Remove("SensorInt");
-
-    double dval = 2.123456789;
-    myTSDB.WriteValue("SensorDouble", dval);
-    myTSDB.Remove("SensorDouble");
-
-    bool bval = true;
-    myTSDB.WriteValue("SensorBool", bval);
-    myTSDB.Remove("SensorBool");
-
-    float fval = 1234.567898;
-    myTSDB.WriteValue("SensorFloat", fval);
-    myTSDB.Remove("SensorLong");
 }

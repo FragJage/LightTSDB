@@ -91,13 +91,20 @@ typedef uint32_t HourlyTimestamp_t;
 typedef uint16_t HourlyOffset_t;
 enum FileState : uint8_t { Stable, Busy };
 enum FileDataType : uint8_t { Undefined, Float, Int, Double, Bool };
+union UValue
+{
+    float Float;
+    int Int;
+    double Double;
+    bool Bool;
+};
 
 struct DataValue
 {
     DataValue() : time(), value() {}
-    DataValue(time_t t, float v) : time(t), value(v) {}
+    DataValue(time_t t, UValue v) : time(t), value(v) {}
     time_t time;
-    float value;
+    UValue value;
 };
 
 struct ErrorInfo
@@ -179,7 +186,8 @@ class LightTSDB
         /// \param    value        Value of sensor
         /// \param    offset       Offset time in seconds
         /// \return   True if value is write
-        bool WriteOldValue(const std::string& sensor, float value, uint32_t offset);
+        template<typename T>
+        bool WriteOldValue(const std::string& sensor, T value, uint32_t offset);
 
         /// \brief    Read values into LightTSDB
         /// \details  Read all values of a sensor into LightTSDB for an hour.
@@ -264,6 +272,7 @@ class LightTSDB
         bool createFiles(FilesInfo& filesInfo, FileDataType valueType);
 
         bool internalWriteValue(const std::string& sensor, void* value, FileDataType valueType);
+        bool internalWriteOldValue(const std::string& sensor, void *value, uint32_t offset, FileDataType valueType);
         bool writeTimeValue(FilesInfo* filesInfo, void* pValue, time_t timestamp);
         std::streampos findIndex(FilesInfo* filesInfo, HourlyTimestamp_t hourlyTimestamp);
 

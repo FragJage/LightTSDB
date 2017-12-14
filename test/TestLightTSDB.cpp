@@ -58,7 +58,7 @@ bool TestLightTSDB::CreateDB()
     itEnd = values.end();
     while(it!=itEnd)
     {
-        assert(20+i*0.5==it->value);
+        assert(20+i*0.5==it->value.Float);
         it++;
         i++;
     }
@@ -94,7 +94,7 @@ bool TestLightTSDB::OpenDB()
     itEnd = values.end();
     while(it!=itEnd)
     {
-        assert(25-i*0.5==it->value);
+        assert(25-i*0.5==it->value.Float);
         it++;
         i++;
     }
@@ -108,10 +108,10 @@ bool TestLightTSDB::WriteOldValue()
     LightTSDB::ErrorInfo myError;
 
     SetMockTime(2017, 10, 24, 14, 1, 5);
-    assert(true==myTSDB.WriteValue("Sensor2", 21.3));
+    assert(true==myTSDB.WriteValue("Sensor2", 21.3f));
     SetMockTime(2017, 10, 24, 14, 10, 5);
-    assert(true==myTSDB.WriteOldValue("Sensor2", 21.5, 500));
-    assert(false==myTSDB.WriteOldValue("Sensor2", 21.1, 700));
+    assert(true==myTSDB.WriteOldValue("Sensor2", 21.5f, 500));
+    assert(false==myTSDB.WriteOldValue("Sensor2", 21.1f, 700));
     myError = myTSDB.GetLastError("Sensor2");
     assert("WRITE_MRV"==myError.Code);
 
@@ -142,7 +142,7 @@ bool TestLightTSDB::ReadWithLimits()
         else
             temp += 0.5;
 
-        assert(temp==it->value);
+        assert(temp==it->value.Float);
         it++;
         i++;
     }
@@ -166,8 +166,8 @@ bool TestLightTSDB::ReadWithResample()
     maxVal = -99;
     while(it!=itEnd)
     {
-        minVal = min(minVal, it->value);
-        maxVal = max(maxVal, it->value);
+        minVal = min(minVal, it->value.Float);
+        maxVal = max(maxVal, it->value.Float);
         it++;
     }
 
@@ -187,7 +187,7 @@ bool TestLightTSDB::ReadLastValue()
     LightTSDB::DataValue timeValue;
 
     assert(true==myTSDB.ReadLastValue("Sensor2", timeValue));
-    assert(21.5==timeValue.value);
+    assert(21.5==timeValue.value.Float);
 
     return true;
 }
@@ -198,7 +198,7 @@ bool TestLightTSDB::Close()
 
     MockAddSecond(60*6);
     assert(false==myTSDB.Close("MySensor"));
-    assert(true==myTSDB.WriteValue("MySensor", 22.5));
+    assert(true==myTSDB.WriteValue("MySensor", 22.5f));
     assert(true==myTSDB.Close("MySensor"));
 
     return true;
@@ -212,20 +212,20 @@ bool TestLightTSDB::IndexSearch()
 
     SetMockTime(2017, 10, 25, 14, 2, 7);
     time(&start);
-    assert(true==myTSDB.WriteValue("Sensor2", 21.3));
+    assert(true==myTSDB.WriteValue("Sensor2", 21.3f));
     assert(true==myTSDB.ReadValues("Sensor2", start, values));
     assert(1==values.size());
     assert(true==myTSDB.ReadValues("Sensor2", start+3600, values));
     assert(0==values.size());
     MockAddSecond(3600);
-    assert(true==myTSDB.WriteValue("Sensor2", 21.2));
+    assert(true==myTSDB.WriteValue("Sensor2", 21.2f));
     MockAddSecond(3600*3);
-    assert(true==myTSDB.WriteValue("Sensor2", 21.5));
+    assert(true==myTSDB.WriteValue("Sensor2", 21.5f));
     MockAddSecond(3600);
-    assert(true==myTSDB.WriteValue("Sensor2", 21.0));
+    assert(true==myTSDB.WriteValue("Sensor2", 21.0f));
     assert(true==myTSDB.ReadValues("Sensor2", start+3600*4, values));
     assert(1==values.size());
-    assert(21.5==values.begin()->value);
+    assert(21.5==values.begin()->value.Float);
 
     return true;
 }
@@ -253,15 +253,15 @@ bool TestLightTSDB::CheckHeader()
 
     myTSDB.SetFolder("test/data");
 
-    assert(false==myTSDB.WriteValue("SignDataErr", 21.3));
+    assert(false==myTSDB.WriteValue("SignDataErr", 21.3f));
     myError = myTSDB.GetLastError("SignDataErr");
     assert("CHECK_SIG"==myError.Code);
 
-    assert(false==myTSDB.WriteValue("StateIndexErr", 21.3));
+    assert(false==myTSDB.WriteValue("StateIndexErr", 21.3f));
     myError = myTSDB.GetLastError("StateIndexErr");
     assert("CHECK_STA"==myError.Code);
 
-    assert(false==myTSDB.WriteValue("VersionDataErr", 21.3));
+    assert(false==myTSDB.WriteValue("VersionDataErr", 21.3f));
     myError = myTSDB.GetLastError("VersionDataErr");
     assert("CHECK_VER"==myError.Code);
 
@@ -275,11 +275,11 @@ bool TestLightTSDB::CheckFiles()
 
     myTSDB.SetFolder("test/data");
 
-    assert(false==myTSDB.WriteValue("TypeIndexErr", 21.3));
+    assert(false==myTSDB.WriteValue("TypeIndexErr", 21.3f));
     myError = myTSDB.GetLastError("TypeIndexErr");
     assert("OPEN_CHK1"==myError.Code);
 
-    assert(false==myTSDB.WriteValue("LostIndex", 21.3));
+    assert(false==myTSDB.WriteValue("LostIndex", 21.3f));
     myError = myTSDB.GetLastError("LostIndex");
     assert("OPEN_NDX2"==myError.Code);
 
@@ -293,11 +293,11 @@ bool TestLightTSDB::CheckDate()
 
     myTSDB.SetFolder("test/data");
 
-    assert(false==myTSDB.WriteValue("CorruptDate", 21.3));
+    assert(false==myTSDB.WriteValue("CorruptDate", 21.3f));
     myError = myTSDB.GetLastError("CorruptDate");
     assert("OPEN_COR1"==myError.Code);
 
-    assert(false==myTSDB.WriteValue("TooNewDate", 21.3));
+    assert(false==myTSDB.WriteValue("TooNewDate", 21.3f));
     myError = myTSDB.GetLastError("TooNewDate");
     assert("OPEN_COR2"==myError.Code);
 
