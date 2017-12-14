@@ -35,6 +35,7 @@ add_executable(
   TestLtsdbFile.cpp
   TestHourlyTimestamp.cpp
   TestLightTSDB.cpp
+  TestOtherTypes.cpp
   main.cpp
 )
 
