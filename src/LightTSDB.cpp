@@ -567,18 +567,6 @@ streampos LightTSDB::findIndex(FilesInfo* filesInfo, HourlyTimestamp_t hourlyTim
     foundTimestamp = filesInfo->index->ReadHourlyTimestamp();
     if(foundTimestamp == hourlyTimestamp) return filesInfo->index->ReadStreamOffset();
 
-    if(foundTimestamp < hourlyTimestamp)
-    {
-        while(foundTimestamp != hourlyTimestamp)
-        {
-            pos += INDEX_STEP;
-            if(!filesInfo->index->Seekg(pos, std::ios::beg)) return 0;
-            foundTimestamp = filesInfo->index->ReadHourlyTimestamp();
-            if(foundTimestamp > hourlyTimestamp)  return 0;
-        }
-        return filesInfo->index->ReadStreamOffset();
-    }
-
     if(foundTimestamp > hourlyTimestamp)
     {
         while(foundTimestamp != hourlyTimestamp)
@@ -860,12 +848,6 @@ void LtsdbFile::Close()
 void LtsdbFile::Clear()
 {
     m_InternalFile.clear();
-}
-
-bool LtsdbFile::Seekp(streamoff off, ios_base::seekdir way)
-{
-    if(!m_InternalFile.seekp(off, way)) return false;
-    return true;
 }
 
 bool LtsdbFile::Seekg(streamoff off, ios_base::seekdir way)
