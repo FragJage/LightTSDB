@@ -8,6 +8,7 @@ TestLightTSDB::TestLightTSDB() : TestClass("LightTSDB", this)
 	addTest("CreateDB", &TestLightTSDB::CreateDB);
 	addTest("OpenDB", &TestLightTSDB::OpenDB);
 	addTest("WriteOldValue", &TestLightTSDB::WriteOldValue);
+	addTest("WriteError", &TestLightTSDB::WriteError);
 	addTest("ReadWithLimits", &TestLightTSDB::ReadWithLimits);
 	addTest("ReadWithResample", &TestLightTSDB::ReadWithResample);
 	addTest("ReadLastValue", &TestLightTSDB::ReadLastValue);
@@ -118,6 +119,19 @@ bool TestLightTSDB::WriteOldValue()
     return true;
 }
 
+bool TestLightTSDB::WriteError()
+{
+    LightTSDB::LightTSDB myTSDB;
+    LightTSDB::ErrorInfo myError;
+    bool value = true;
+
+    assert(false==myTSDB.WriteValue("Sensor2", value));
+    myError = myTSDB.GetLastError("Sensor2");
+    assert("MISMATCH"==myError.Code);
+
+    return true;
+}
+
 bool TestLightTSDB::ReadWithLimits()
 {
     int i;
@@ -178,6 +192,9 @@ bool TestLightTSDB::ReadWithResample()
     assert(true==myTSDB.ResampleValues("MySensor", start+3600*10, start+3600*11, values, 60));
     assert(0==values.size());
 
+    assert(false==myTSDB.ResampleValues("ZzSensor", start, start+3600, values, 60));
+    LightTSDB::ErrorInfo myError = myTSDB.GetLastError("ZzSensor");
+    assert("NOFILE"==myError.Code);
     return true;
 }
 
@@ -278,6 +295,10 @@ bool TestLightTSDB::CheckFiles()
     assert(false==myTSDB.WriteValue("TypeIndexErr", 21.3f));
     myError = myTSDB.GetLastError("TypeIndexErr");
     assert("OPEN_CHK1"==myError.Code);
+
+    assert(false==myTSDB.WriteValue("LostData", 21.3f));
+    myError = myTSDB.GetLastError("LostData");
+    assert("OPEN_DAT2"==myError.Code);
 
     assert(false==myTSDB.WriteValue("LostIndex", 21.3f));
     myError = myTSDB.GetLastError("LostIndex");

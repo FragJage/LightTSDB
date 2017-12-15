@@ -13,6 +13,7 @@ public:
     bool CreateDB();
     bool OpenDB();
     bool WriteOldValue();
+    bool WriteError();
     bool ReadWithLimits();
     bool ReadWithResample();
     bool ReadLastValue();
