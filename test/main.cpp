@@ -12,7 +12,6 @@
 using namespace std;
 
 //TO DO List
-//Read/Write an others types double, bool, int ...
 //Add compression
 //Use state flag
 //Add uvw (wrapper for libuv)

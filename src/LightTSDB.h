@@ -242,8 +242,8 @@ class LightTSDB
     private:
         struct FilesInfo
         {
-            FilesInfo() : data(nullptr), index(nullptr), startHour(0), minHour(0), maxHour(0), maxOffset(0), indexSize(0), sensor(), version(0), type(FileDataType::Undefined), options(0) {}
-            FilesInfo(std::string _sensor) : data(nullptr), index(nullptr), startHour(0), minHour(0), maxHour(0), maxOffset(0), indexSize(0), sensor(_sensor), version(0), type(FileDataType::Undefined), options(0) {}
+            FilesInfo() : data(nullptr), index(nullptr), startHour(0), minHour(0), maxHour(0), maxOffset(0), indexSize(0), sensor(), version(0), type(FileDataType::Undefined), options(0), valueSize(0) {}
+            FilesInfo(std::string _sensor) : data(nullptr), index(nullptr), startHour(0), minHour(0), maxHour(0), maxOffset(0), indexSize(0), sensor(_sensor), version(0), type(FileDataType::Undefined), options(0), valueSize(0) {}
             LtsdbFile* data;
             LtsdbFile* index;
             std::time_t startHour;
@@ -255,6 +255,7 @@ class LightTSDB
             uint8_t version;
             FileDataType type;
             uint8_t options;
+            int valueSize;
         };
 
         enum FileType { data, index };
