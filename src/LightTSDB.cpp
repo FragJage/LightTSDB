@@ -807,36 +807,6 @@ void ResamplingHelper::PreserveExtremum(const vector<AverageValue>& averages, li
 /*** Class LtsdbFile                                                                                        ***/
 /***                                                                                                        ***/
 /**************************************************************************************************************/
-#ifdef HAVE_LIBUV
-LtsdbFile::LtsdbFile()
-{
-    auto loop = uvw::Loop::getDefault();
-    m_InternalFile = loop->resource<uvw::FileReq>();
-}
-
-LtsdbFile::~LtsdbFile()
-{
-    m_InternalFile.close();
-}
-
-bool LtsdbFile::Open(std::string fileName)
-{
-    return m_InternalFile.openSync(fileName, O_CREAT | O_APPEND | O_RDWR, 0644);
-}
-
-void LtsdbFile::Close()
-{
-    m_InternalFile.closeSync();
-}
-
-bool LtsdbFile::FileExists(const string& fileName)
-{
-    auto loop = uvw::Loop::getDefault();
-    auto fsReq = loop->resource<uvw::FsReq>();
-    auto statR = fsReq->statSync(filename);
-    return statR.first;
-}
-#else
 LtsdbFile::LtsdbFile()
 {
 }
@@ -972,5 +942,4 @@ bool LtsdbFile::Is_Open()
     return m_InternalFile.is_open();
 }
 
-#endif
 }
