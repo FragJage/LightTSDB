@@ -17,6 +17,9 @@
 					<Add directory="src" />
 					<Add directory="dependency" />
 				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
 			</Target>
 			<Target title="Debug">
 				<Option output="bin/test" prefix_auto="1" extension_auto="1" />
@@ -35,12 +38,11 @@
 		<Compiler>
 			<Add option="-Wall" />
 			<Add option="-std=c++11" />
-			<Add option="-pg" />
 			<Add option="-m32" />
 		</Compiler>
 		<Linker>
-			<Add option="-pg" />
 			<Add option="-m32" />
+			<Add option="-pg" />
 		</Linker>
 		<Unit filename="dependency/UnitTest/UnitTest.cpp" />
 		<Unit filename="dependency/UnitTest/UnitTest.h" />

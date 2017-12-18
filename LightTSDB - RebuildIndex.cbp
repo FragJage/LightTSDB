@@ -2,7 +2,7 @@
 <CodeBlocks_project_file>
 	<FileVersion major="1" minor="6" />
 	<Project>
-		<Option title="LightTSDB - Example 3" />
+		<Option title="LightTSDB - RebuildIndex" />
 		<Option pch_mode="2" />
 		<Option compiler="gcc" />
 		<Build>
@@ -24,9 +24,11 @@
 			<Add option="-Wall" />
 			<Add option="-fexceptions" />
 		</Compiler>
-		<Unit filename="examples/example3.cpp" />
 		<Unit filename="src/LightTSDB.cpp" />
 		<Unit filename="src/LightTSDB.h" />
+		<Unit filename="tools/RebuildIndex.cpp" />
+		<Unit filename="tools/RebuildIndex.h" />
+		<Unit filename="tools/RebuildIndexMain.cpp" />
 		<Extensions>
 			<code_completion />
 			<envvars />
