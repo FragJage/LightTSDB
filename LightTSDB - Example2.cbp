@@ -2,7 +2,7 @@
 <CodeBlocks_project_file>
 	<FileVersion major="1" minor="6" />
 	<Project>
-		<Option title="SimpleIni - Example 2" />
+		<Option title="LightTSDB - Example 2" />
 		<Option pch_mode="2" />
 		<Option compiler="gcc" />
 		<Build>
@@ -25,8 +25,8 @@
 			<Add option="-fexceptions" />
 		</Compiler>
 		<Unit filename="examples/example2.cpp" />
-		<Unit filename="src/SimpleIni.cpp" />
-		<Unit filename="src/SimpleIni.h" />
+		<Unit filename="src/LightTSDB.cpp" />
+		<Unit filename="src/LightTSDB.h" />
 		<Extensions>
 			<code_completion />
 			<envvars />

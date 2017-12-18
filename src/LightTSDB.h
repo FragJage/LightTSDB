@@ -239,6 +239,11 @@ class LightTSDB
         /// \return   Error message and error code
         ErrorInfo GetLastError(const std::string& sensor);
 
+    protected :
+        enum FileType { data, index };
+        std::string getFileName(const std::string& sensor, const FileType fileType);
+        std::string getFileExt(const FileType fileType);
+
     private:
         struct FilesInfo
         {
@@ -257,11 +262,6 @@ class LightTSDB
             uint8_t options;
             int valueSize;
         };
-
-        enum FileType { data, index };
-
-        std::string getFileName(const std::string& sensor, const FileType fileType);
-        std::string getFileExt(const FileType fileType);
 
         FilesInfo* getFilesInfo(const std::string& sensor, FileDataType valueType);
         void cleanUp(FilesInfo* pFileInfo);
