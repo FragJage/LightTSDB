@@ -12,11 +12,7 @@
 using namespace std;
 
 //TO DO List
-//Add compression
 //Use state flag
-//Add uvw (wrapper for libuv)
-//Add Write Cache and Flush ?
-//Add Read Cache ?
 //Tool for check data file
 //Tool for rebuild index file
 //Tool for compress or uncompress file

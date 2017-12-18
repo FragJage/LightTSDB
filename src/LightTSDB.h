@@ -73,20 +73,11 @@
 #include <list>
 #include <vector>
 #include <ctime>
-#ifdef HAVE_LIBUV
-    #include "uvw.hpp"
-#else
-    #include <fstream>
-#endif
+#include <fstream>
 
 namespace LightTSDB {
 
-#ifdef HAVE_LIBUV
-    typedef uv_fs_t ltsdb_fs_t;
-#else
-    typedef std::fstream ltsdb_fs_t;
-#endif
-
+typedef std::fstream ltsdb_fs_t;
 typedef uint32_t HourlyTimestamp_t;
 typedef uint16_t HourlyOffset_t;
 enum FileState : uint8_t { Stable, Busy };
