@@ -2,40 +2,43 @@
 /**                                                                                           **/
 /** EXAMPLE 1                                                                                 **/
 /**                                                                                           **/
-/** Read 3 key's value in example1.ini                                                        **/
-/** Lire les 3 valeurs dans example1.ini                                                      **/
-/**                                                                                           **/
-/***********************************************************************************************/
-
-/***********************************************************************************************/
-/**                                                                                           **/
-/** example1.ini                                                                              **/
-/**                                                                                           **/
-/** [SGBD]                                                                                    **/
-/** Host=192.168.0.1	;IP du serveur SQL                                                    **/
-/** PortTCP=3307		#Port du serveur SQL                                                  **/
-/** BDD=MyExample		;Nom de la base                                                       **/
+/** Write values into LightTSDB                                                               **/
+/** Read values from LightTSDB                                                                **/
 /**                                                                                           **/
 /***********************************************************************************************/
 
 #include <iostream>
-#include "SimpleIni.h"
+#include "LightTSDB.h"
 
 using namespace std;
 
 int main()
 {
-    SimpleIni ini;
-    string host;
-    int port;
+    LightTSDB::LightTSDB myTSDB;
+    LightTSDB::DataValue myValue;
 
 
-    ini.Load("examples\\example1.ini");
-    host = ini.GetValue<string>("SGBD", "Host", "127.0.0.1");
-    port = ini.GetValue<int>("SGBD", "PortTCP", 3306);
-    cout << "SGBD Host : " << host << endl;
-    cout << "Port TCP : " << port << endl;
-    cout << "Database : " << ini.GetValue<string>("SGBD", "BDD", "MyBDD") << endl;
+    ///*** Write float value
+    float temperature = 22.35;
+    myTSDB.WriteValue("BedRoomTemperature", temperature);
+
+    ///*** Write bool value
+    bool lightOn = true;
+    myTSDB.WriteValue("BedRoomLight", lightOn);
+
+    ///*** Read float value
+    myTSDB.ReadLastValue("BedRoomTemperature", myValue);
+    cout << "BedRoom Temperature : " << myValue.value.Float << endl;
+
+    ///*** Read bool value
+    myTSDB.ReadLastValue("BedRoomLight", myValue);
+    cout << "BedRoom Light : " << myValue.value.Bool << endl;
+
+    ///*** Clean up
+    myTSDB.Close("BedRoomTemperature");
+    myTSDB.Close("BedRoomLight");
+    myTSDB.Remove("BedRoomTemperature");
+    myTSDB.Remove("BedRoomLight");
 
     return 0;
 }

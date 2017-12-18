@@ -243,7 +243,6 @@ bool LightTSDB::ReadLastValue(const string& sensor, DataValue& dataValue)
 
     streampos pos = findIndex(filesInfo, filesInfo->maxHour);
     if(pos==(streampos)0) return true;
-
     filesInfo->data->Seekg(pos, std::ios::beg);
     HourlyTimestamp_t dataTimestamp = filesInfo->data->ReadHourlyTimestamp();
     if(dataTimestamp!=filesInfo->maxHour) return false;
@@ -253,7 +252,7 @@ bool LightTSDB::ReadLastValue(const string& sensor, DataValue& dataValue)
 
     filesInfo->data->Seekg(0, std::ios::end);
     pos = filesInfo->data->Tellg();
-    pos -= (sizeof(float)+sizeof(HourlyOffset_t));
+    pos -= (filesInfo->valueSize+sizeof(HourlyOffset_t));
     filesInfo->data->Seekg(pos, std::ios::beg);
     filesInfo->data->ReadValue(&offset, &uvalue, filesInfo->valueSize);
     dataValue.time = HourlyTimestamp::ToTimeT(filesInfo->maxHour, offset);
