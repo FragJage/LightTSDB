@@ -233,7 +233,8 @@ class LightTSDB
     protected :
         enum FileType { data, index };
         std::string getFileName(const std::string& sensor, const FileType fileType);
-        std::string getFileExt(const FileType fileType);
+        bool checkHeader(const std::string& sensor, const std::string& signature, uint8_t version, FileState state, FileType fileType);
+        int getValueSize(FileDataType valueType);
 
     private:
         struct FilesInfo
@@ -255,6 +256,7 @@ class LightTSDB
         };
 
         FilesInfo* getFilesInfo(const std::string& sensor, FileDataType valueType);
+        std::string getFileExt(const FileType fileType);
         void cleanUp(FilesInfo* pFileInfo);
 
         bool openFiles(FilesInfo& filesInfo);
@@ -267,14 +269,12 @@ class LightTSDB
         bool writeTimeValue(FilesInfo* filesInfo, void* pValue, time_t timestamp);
         std::streampos findIndex(FilesInfo* filesInfo, HourlyTimestamp_t hourlyTimestamp);
 
-        bool checkHeader(const std::string& sensor, const std::string& signature, uint8_t version, FileState state, FileType fileType);
         bool checkSignature(const std::string& sensor, const std::string& signature, FileType fileType);
         bool checkVersion(const std::string& sensor, uint8_t version, FileType fileType);
         bool checkState(const std::string& sensor, FileState state, FileType fileType);
         void setLastError(const std::string& sensor, const std::string& code, const std::string& errMessage, const std::string& sysMessage="");
 
         bool ends_with(const std::string& value, const std::string& ending);
-        int getValueSize(FileDataType valueType);
 
         std::string m_Folder;
         std::map<std::string, ErrorInfo> m_LastError;

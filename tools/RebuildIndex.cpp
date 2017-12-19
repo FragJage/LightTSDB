@@ -12,17 +12,17 @@ RebuildIndex::RebuildIndex()
 
 RebuildIndex::~RebuildIndex()
 {
-    m_Data.Close();
-    m_Index.Close();
+    closeFiles();
 }
 
 bool RebuildIndex::Rebuild(const string& sensor)
 {
     m_Sensor = sensor;
-    if(!renameFileIndex(sensor)) return false;
-    if(!openFiles(sensor)) return false;
+    if(!renameFileIndex()) return false;
+    if(!openFiles()) return false;
     if(!createHeader()) return false;
     if(!buildBody()) return false;
+    closeFiles();
 
     return true;
 }
@@ -96,10 +96,23 @@ bool RebuildIndex::createHeader()
         return false;
     }
 
-    if(!checkHeader(m_Sensor, signature, version, state, fileType))
+    if(!checkHeader(m_Sensor, signature, version, state, FileType::data))
     {
         ErrorInfo lastError = GetLastError(m_Sensor);
         setLastErrorRebuild(lastError.Code, lastError.ErrMessage, lastError.SysMessage);
+        return false;
+    }
+
+    m_ValueSize = getValueSize(type);
+    if(m_ValueSize==0)
+    {
+        setLastErrorRebuild("HEADER_TYP", "Unsupported type of value in LightTSDB data file.");
+        return false;
+    }
+
+    if(!m_Index.WriteHeader(signature, version, type, options, FileState::Stable))
+    {
+        setLastErrorRebuild("HEADER_WRI", "Unable to write header in LightTSDB index file.", strerror(errno));
         return false;
     }
 
@@ -108,7 +121,39 @@ bool RebuildIndex::createHeader()
 
 bool RebuildIndex::buildBody()
 {
+    streampos pos;
+    HourlyTimestamp_t hour;
+    HourlyOffset_t offset;
+    DataValue value;
+
+    do
+    {
+        pos = m_Data.Tellg();
+        hour = m_Data.ReadHourlyTimestamp();
+
+        if(!m_Index.WriteStreamOffset(pos))
+        {
+            setLastErrorRebuild("OFFSET_WRI", "Unable to write offset in LightTSDB index file.", strerror(errno));
+            return false;
+        }
+        if(!m_Index.WriteHourlyTimestamp(hour))
+        {
+            setLastErrorRebuild("HOUR_WRI", "Unable to write hour timestamp in LightTSDB index file.", strerror(errno));
+            return false;
+        }
+
+        while(m_Data.ReadValue(&offset, &value, m_ValueSize))
+        {
+            if(offset==ENDLINE) break;
+        }
+    } while(offset==ENDLINE);
     return true;
+}
+
+void RebuildIndex::closeFiles()
+{
+    m_Data.Close();
+    m_Index.Close();
 }
 
 }

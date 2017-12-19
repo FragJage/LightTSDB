@@ -15,16 +15,18 @@ class RebuildIndex : public LightTSDB
         ErrorInfo GetLastErrorRebuild();
 
     private:
-        bool renameFileIndex(const std::string& sensor);
-        bool openFiles(const std::string& sensor);
+        bool renameFileIndex();
+        bool openFiles();
         bool createHeader();
         bool buildBody();
+        void closeFiles();
         void setLastErrorRebuild(const std::string& code, const std::string& errMessage, const std::string& sysMessage="");
 
         std::string m_Sensor;
         ErrorInfo m_LastError;
         LtsdbFile m_Data;
         LtsdbFile m_Index;
+        int m_ValueSize;
 };
 
 }
