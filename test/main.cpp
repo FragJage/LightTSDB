@@ -8,6 +8,7 @@
 #include "TestHourlyTimestamp.h"
 #include "TestLightTSDB.h"
 #include "TestOtherTypes.h"
+#include "TestTools.h"
 
 using namespace std;
 
@@ -170,6 +171,7 @@ int main()
         unitTest.addTestClass(new TestHourlyTimestamp());
         unitTest.addTestClass(new TestLightTSDB());
         unitTest.addTestClass(new TestOtherTypes());
+        unitTest.addTestClass(new TestTools());
     }
     catch(const exception &e)
     {

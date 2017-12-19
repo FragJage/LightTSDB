@@ -57,6 +57,8 @@
 		<Unit filename="test/TestLtsdbFile.h" />
 		<Unit filename="test/TestOtherTypes.cpp" />
 		<Unit filename="test/TestOtherTypes.h" />
+		<Unit filename="test/TestTools.cpp" />
+		<Unit filename="test/TestTools.h" />
 		<Unit filename="test/TimeMock.cpp" />
 		<Unit filename="test/TimeMock.h" />
 		<Unit filename="test/main.cpp" />
