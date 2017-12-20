@@ -42,6 +42,8 @@ bool TestOtherTypes::WriteBool()
     bval = true;
     assert(true==myTSDB.WriteOldValue("BoolSensor", bval, 500));
     bval = false;
+    assert(true==myTSDB.WriteTimeValue("BoolSensor", bval, m_LastTime-250));
+    bval = true;
     assert(true==myTSDB.WriteValue("BoolSensor", bval));
 
     return true;
@@ -54,12 +56,14 @@ bool TestOtherTypes::ReadBool()
     list<LightTSDB::DataValue>::const_iterator it;
 
     assert(true==myTSDB.ReadValues("BoolSensor", m_LastTime, dataValues));
-    assert(2==dataValues.size());
+    assert(3==dataValues.size());
 
     it = dataValues.begin();
     assert(true==it->value.Bool);
     ++it;
     assert(false==it->value.Bool);
+    ++it;
+    assert(true==it->value.Bool);
 
     return true;
 }
@@ -72,6 +76,8 @@ bool TestOtherTypes::WriteInt()
     SetMockTime(2017, 10, 27, 16, 24, 9);
     ival = 1234567898;
     assert(true==myTSDB.WriteOldValue("IntSensor", ival, 900));
+    ival = 1234567900;
+    assert(true==myTSDB.WriteTimeValue("IntSensor", ival, time(nullptr)-400));
     ival = 1234567902;
     assert(true==myTSDB.WriteValue("IntSensor", ival));
 
@@ -101,6 +107,9 @@ bool TestOtherTypes::WriteDouble()
     MockAddSecond(600);
     dval = 3.987654321;
     assert(true==myTSDB.WriteOldValue("DoubleSensor", dval, 400));
+    MockAddSecond(600);
+    dval = 5.546372819;
+    assert(true==myTSDB.WriteTimeValue("DoubleSensor", dval, m_LastTime+400));
 
     return true;
 }
@@ -112,12 +121,14 @@ bool TestOtherTypes::ReadDouble()
     list<LightTSDB::DataValue>::const_iterator it;
 
     assert(true==myTSDB.ReadValues("DoubleSensor", m_LastTime, m_LastTime+1000, dataValues));
-    assert(2==dataValues.size());
+    assert(3==dataValues.size());
 
     it = dataValues.begin();
     assert(2.123456789==it->value.Double);
     ++it;
     assert(3.987654321==it->value.Double);
+    ++it;
+    assert(5.546372819==it->value.Double);
 
     return true;
 }

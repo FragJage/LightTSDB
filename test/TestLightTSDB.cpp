@@ -7,6 +7,7 @@ TestLightTSDB::TestLightTSDB() : TestClass("LightTSDB", this)
 {
 	addTest("CreateDB", &TestLightTSDB::CreateDB);
 	addTest("OpenDB", &TestLightTSDB::OpenDB);
+	addTest("WriteTimeValue", &TestLightTSDB::WriteTimeValue);
 	addTest("WriteOldValue", &TestLightTSDB::WriteOldValue);
 	addTest("WriteError", &TestLightTSDB::WriteError);
 	addTest("ReadWithLimits", &TestLightTSDB::ReadWithLimits);
@@ -99,6 +100,22 @@ bool TestLightTSDB::OpenDB()
         it++;
         i++;
     }
+
+    return true;
+}
+
+bool TestLightTSDB::WriteTimeValue()
+{
+    LightTSDB::LightTSDB myTSDB;
+    LightTSDB::ErrorInfo myError;
+
+    SetMockTime(2017, 10, 24, 7, 2, 6);
+    assert(true==myTSDB.WriteValue("Sensor2", 19.2f));
+    SetMockTime(2017, 10, 24, 7, 11, 6);
+    assert(true==myTSDB.WriteTimeValue("Sensor2", 20.5f, time(nullptr)-500));
+    assert(false==myTSDB.WriteOldValue("Sensor2", 20.1f, time(nullptr)-700));
+    myError = myTSDB.GetLastError("Sensor2");
+    assert("WRITE_MRV"==myError.Code);
 
     return true;
 }

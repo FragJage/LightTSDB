@@ -179,6 +179,15 @@ class LightTSDB
         template<typename T>
         bool WriteOldValue(const std::string& sensor, T value, uint32_t offset);
 
+        /// \brief    Write old value into LightTSDB
+        /// \details  Add a new value of a sensor into LightTSDB at old time. (Only if none more recent value are wrote)
+        /// \param    sensor       Name of sensor
+        /// \param    value        Value of sensor
+        /// \param    time         Time
+        /// \return   True if value is write
+        template<typename T>
+        bool WriteTimeValue(const std::string& sensor, T value, time_t time);
+
         /// \brief    Read values into LightTSDB
         /// \details  Read all values of a sensor into LightTSDB for an hour.
         /// \param    sensor       Name of sensor
@@ -266,6 +275,7 @@ class LightTSDB
 
         bool internalWriteValue(const std::string& sensor, void* value, FileDataType valueType);
         bool internalWriteOldValue(const std::string& sensor, void *value, uint32_t offset, FileDataType valueType);
+        bool internalWriteTimeValue(const std::string& sensor, void* value, time_t time, FileDataType valueType);
         bool writeTimeValue(FilesInfo* filesInfo, void* pValue, time_t timestamp);
         std::streampos findIndex(FilesInfo* filesInfo, HourlyTimestamp_t hourlyTimestamp);
 

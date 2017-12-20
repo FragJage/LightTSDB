@@ -149,6 +149,44 @@ bool LightTSDB::internalWriteOldValue(const std::string& sensor, void* pValue, u
     return writeTimeValue(filesInfo, pValue, oldTime);
 }
 
+template<>
+bool LightTSDB::WriteTimeValue<float>(const std::string& sensor, float value, time_t oldTime)
+{
+    return internalWriteTimeValue(sensor, &value, oldTime, FileDataType::Float);
+}
+
+template<>
+bool LightTSDB::WriteTimeValue<int>(const std::string& sensor, int value, time_t oldTime)
+{
+    return internalWriteTimeValue(sensor, &value, oldTime, FileDataType::Int);
+}
+
+template<>
+bool LightTSDB::WriteTimeValue<double>(const std::string& sensor, double value, time_t oldTime)
+{
+    return internalWriteTimeValue(sensor, &value, oldTime, FileDataType::Double);
+}
+
+template<>
+bool LightTSDB::WriteTimeValue<bool>(const std::string& sensor, bool value, time_t oldTime)
+{
+    return internalWriteTimeValue(sensor, &value, oldTime, FileDataType::Bool);
+}
+
+bool LightTSDB::internalWriteTimeValue(const std::string& sensor, void* pValue, time_t oldTime, FileDataType valueType)
+{
+    FilesInfo* filesInfo = getFilesInfo(sensor, valueType);
+    if(filesInfo == nullptr) return false;
+
+    if((filesInfo->maxHour>0)&&(oldTime <= HourlyTimestamp::ToTimeT(filesInfo->maxHour, filesInfo->maxOffset)))
+    {
+        setLastError(sensor, "WRITE_MRV", "There is a more recent value.");
+        return false;
+    }
+
+    return writeTimeValue(filesInfo, pValue, oldTime);
+}
+
 bool LightTSDB::writeTimeValue(FilesInfo* filesInfo, void* pValue, time_t timestamp)
 {
     if(difftime(timestamp, filesInfo->startHour)>3599)

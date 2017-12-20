@@ -12,6 +12,7 @@ public:
 
     bool CreateDB();
     bool OpenDB();
+    bool WriteTimeValue();
     bool WriteOldValue();
     bool WriteError();
     bool ReadWithLimits();
