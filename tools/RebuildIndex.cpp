@@ -131,14 +131,14 @@ bool RebuildIndex::buildBody()
         pos = m_Data.Tellg();
         hour = m_Data.ReadHourlyTimestamp();
 
-        if(!m_Index.WriteStreamOffset(pos))
-        {
-            setLastErrorRebuild("OFFSET_WRI", "Unable to write offset in LightTSDB index file.", strerror(errno));
-            return false;
-        }
         if(!m_Index.WriteHourlyTimestamp(hour))
         {
             setLastErrorRebuild("HOUR_WRI", "Unable to write hour timestamp in LightTSDB index file.", strerror(errno));
+            return false;
+        }
+        if(!m_Index.WriteStreamOffset(pos))
+        {
+            setLastErrorRebuild("OFFSET_WRI", "Unable to write offset in LightTSDB index file.", strerror(errno));
             return false;
         }
 

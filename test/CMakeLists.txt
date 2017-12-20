@@ -21,6 +21,12 @@ file(
 
 file(
   GLOB_RECURSE
+  Tools_files
+  ../tools/*
+)
+
+file(
+  GLOB_RECURSE
   UnitTest_files
   ../dependency/UnitTest/*
 )
@@ -30,6 +36,7 @@ set(EXECUTABLE_OUTPUT_PATH bin/${CMAKE_BUILD_TYPE})
 add_executable(
   unittest
   ${LightTSDB_files}
+  ${Tools_files}
   ${UnitTest_files}
   TimeMock.cpp
   TestLtsdbFile.cpp

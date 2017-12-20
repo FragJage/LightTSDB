@@ -14,9 +14,13 @@ using namespace std;
 
 //TO DO List
 //Use state flag
+//Mutex protection for writing (and reading ?)
+//  #include <mutex>
+//  #include <thread>
+//  std::mutex m;
+//  std::lock_guard<std::mutex> lock(m);
 //Tool for check data file
-//Tool for rebuild index file
-//Tool for compress or uncompress file
+//Use libUV via UVW ?
 
 vector<int> RandomIntervalTime;
 vector<time_t> RandomValuesTime;
