@@ -2,49 +2,36 @@
 /**                                                                                           **/
 /** EXAMPLE 3                                                                                 **/
 /**                                                                                           **/
-/** Modify and save a configuration file                                                      **/
-/** Modifier et enregistrer un fichier de configuration                                       **/
-/**                                                                                           **/
-/***********************************************************************************************/
-
-/***********************************************************************************************/
-/**                                                                                           **/
-/** example3.ini                                                                              **/
-/**                                                                                           **/
-/**  [sectionA]                                                                               **/
-/**  cleA1=valeurA1                                                                           **/
-/**  cleA2=valeurA2                                                                           **/
+/** Forced time writing                                                                       **/
 /**                                                                                           **/
 /***********************************************************************************************/
 
 #include <iostream>
-#include "SimpleIni.h"
+#include "LightTSDB.h"
 
 using namespace std;
 
-
 int main()
 {
-    SimpleIni ini;
+    LightTSDB::LightTSDB myTSDB;
+    int numberOfPeople;
 
 
-    if(!ini.Load("examples\\example3.ini"))
-    {
-        cout << "Impossible de charger example3.ini." << endl;
-        return -1;
-    }
+    ///*** Write int value 10 min ago
+    numberOfPeople = 10;
+    myTSDB.WriteTimeValue("ShowRoomPeople", numberOfPeople, time(nullptr)-600);
 
-    ini.SetValue<string>("sectionA", "cleA2", "valeurA2-bis");  //Modify existing value
-    ini.SetValue<string>("sectionB", "cleB1", "valeurB1");      //Add section and key with value
-    ini.SetValue<float>("sectionB", "cleB2", 0.5);              //Add key with value
+    ///*** Write int value 5 min ago
+    numberOfPeople = 15;
+    myTSDB.WriteTimeValue("ShowRoomPeople", numberOfPeople, 300);
 
-    if(!ini.SaveAs("examples\\example3bis.ini"))
-    {
-        cout << "Impossible de sauver example3bis.ini." << endl;
-        return -1;
-    }
+    ///*** Write int value for now
+    numberOfPeople = 17;
+    myTSDB.WriteValue("ShowRoomPeople", numberOfPeople);
 
-    cout << "Le fichier de configuration : example3bis.ini." << endl;
+    ///*** Clean up
+    myTSDB.Close("ShowRoomPeople");
+    myTSDB.Remove("ShowRoomPeople");
 
     return 0;
 }
