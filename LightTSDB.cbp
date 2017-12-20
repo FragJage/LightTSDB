@@ -14,8 +14,6 @@
 				<Compiler>
 					<Add option="-O2" />
 					<Add option="-DWIN" />
-					<Add directory="src" />
-					<Add directory="dependency" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -31,7 +29,6 @@
 					<Add option="-g" />
 					<Add option="-DDEBUG" />
 					<Add option="-DWIN" />
-					<Add directory="src" />
 				</Compiler>
 			</Target>
 		</Build>
@@ -39,6 +36,8 @@
 			<Add option="-Wall" />
 			<Add option="-std=c++11" />
 			<Add option="-m32" />
+			<Add directory="dependency" />
+			<Add directory="src" />
 		</Compiler>
 		<Linker>
 			<Add option="-m32" />

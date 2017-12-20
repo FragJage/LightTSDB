@@ -2,54 +2,38 @@
 /**                                                                                           **/
 /** EXAMPLE 2                                                                                 **/
 /**                                                                                           **/
-/** Browse sections and keys                                                                  **/
-/** Parcourir des sections et des clés                                                        **/
-/**                                                                                           **/
-/***********************************************************************************************/
-
-/***********************************************************************************************/
-/**                                                                                           **/
-/** example2.ini                                                                              **/
-/**                                                                                           **/
-/**  [section1]                                                                               **/
-/**  cle10=valeur10                                                                           **/
-/**  cle11=valeur11                                                                           **/
-/**                                                                                           **/
-/**  [section2]                                                                               **/
-/**  cle20=valeur20                                                                           **/
-/**  cle22=valeur22                                                                           **/
-/**  cle24=valeur24                                                                           **/
+/** Read multiples values in LightTSDB                                                        **/
 /**                                                                                           **/
 /***********************************************************************************************/
 
 #include <iostream>
-#include "SimpleIni.h"
+#include "LightTSDB.h"
 
 using namespace std;
 
-
 int main()
 {
-    SimpleIni ini;
+    struct tm tmtime;
+    time_t start = 1462690800;
+    LightTSDB::LightTSDB myTSDB;
+    LightTSDB::ErrorInfo myError;
+    list<LightTSDB::DataValue> myValues;
 
 
-    if(!ini.Load("examples\\example2.ini"))
+    myTSDB.SetFolder("test/data");
+    if(!myTSDB.ReadValues("LucileBedRoomTemperature", start, myValues))
     {
-        cout << "Impossible de charger example2.ini." << endl;
+        myError = myTSDB.GetLastError("LucileBedRoomTemperature");
+        cout << "ERROR" << endl << myError.ErrMessage << endl << myError.SysMessage << endl;
         return -1;
     }
 
-    cout << "Liste des sections" << endl;
-    for (SimpleIni::SectionIterator itSection = ini.beginSection(); itSection != ini.endSection(); ++itSection)
+    localtime_r(&start, &tmtime);
+    cout << "All data for the day " << 1900+tmtime.tm_year << "/" << tmtime.tm_mon << "/" << tmtime.tm_mday << endl;
+    for(list<LightTSDB::DataValue>::const_iterator it=myValues.begin(); it!=myValues.end(); ++it)
     {
-        cout << *itSection << endl;
-    }
-    cout << endl;
-
-    cout << "Liste des cles de la section2" << endl;
-    for (SimpleIni::KeyIterator itKey = ini.beginKey("section2"); itKey != ini.endKey("section2"); ++itKey)
-    {
-        cout << *itKey << endl;
+        localtime_r(&(it->time), &tmtime);
+        cout << tmtime.tm_hour << ":" << tmtime.tm_min << ":" << tmtime.tm_sec << " => " << it->value.Float << endl;
     }
 
     return 0;
