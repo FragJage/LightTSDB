@@ -794,6 +794,39 @@ void ResamplingHelper::Average(time_t timeBegin, const list<DataValue>& values, 
 
 void ResamplingHelper::PreserveExtremum(const vector<AverageValue>& averages, list<DataValue>& values)
 {
+    int i = 0;
+    int aSize = averages.size()-1;
+    UValue uvalue;
+
+    values.clear();
+    for(i=0; i<=aSize; i++)
+    {
+        if((i==0)||(i==aSize))
+        {
+            uvalue.Float = averages[i].average;
+            values.emplace_back(averages[i].time, uvalue);
+        }
+        else if((averages[i-1].average>averages[i].average)&&(averages[i].average<averages[i+1].average))
+        {
+            uvalue.Float = averages[i].mini;
+            values.emplace_back(averages[i].time, uvalue);
+        }
+        else if((averages[i-1].average<averages[i].average)&&(averages[i].average>averages[i+1].average))
+        {
+            uvalue.Float = averages[i].maxi;
+            values.emplace_back(averages[i].time, uvalue);
+        }
+        else
+        {
+            uvalue.Float = averages[i].average;
+            values.emplace_back(averages[i].time, uvalue);
+        }
+    }
+}
+
+/*
+void ResamplingHelper::PreserveExtremum(const vector<AverageValue>& averages, list<DataValue>& values)
+{
     vector<AverageValue>::const_iterator it, itEnd, itBack, itNext;
     int i = 0;
     int aSize = averages.size();
@@ -834,6 +867,7 @@ void ResamplingHelper::PreserveExtremum(const vector<AverageValue>& averages, li
         ++i;
     }
 }
+*/
 
 /**************************************************************************************************************/
 /***                                                                                                        ***/
