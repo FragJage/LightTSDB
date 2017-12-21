@@ -2,6 +2,7 @@
 <CodeBlocks_workspace_file>
 	<Workspace title="Workspace">
 		<Project filename="LightTSDB.cbp" />
+		<Project filename="LightTSDB - Server.cbp" />
 		<Project filename="LightTSDB - RebuildIndex.cbp" />
 		<Project filename="LightTSDB - Example1.cbp" />
 		<Project filename="LightTSDB - Example2.cbp" />
