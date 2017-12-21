@@ -114,7 +114,7 @@ void MeasureRandomReading()
     LightTSDB::LightTSDB myTSDB;
     list<LightTSDB::DataValue> readValues;
     vector<int>::const_iterator it, itEnd;
-    chrono::duration<float> fs;
+    chrono::duration<float> fs(0);
     int i, nbok=0;
 
     it = RandomOffset.begin();
@@ -145,7 +145,9 @@ void MeasureRandomReading()
         ++it;
     }
 
-    cout << termcolor::lightWhite << "    Random read " << nbok/RandomReadSize << "x" << RandomReadSize << " values      " << termcolor::lightGreen << fs.count() << " s." << endl;
+    cout << termcolor::lightWhite << "    Random read ";
+    cout << nbok/RandomReadSize << "x" << RandomReadSize;
+    cout << " values      " << termcolor::lightGreen << fs.count() << " s." << endl;
 }
 
 void CleanUp()

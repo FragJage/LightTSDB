@@ -113,7 +113,7 @@ bool TestLightTSDB::WriteTimeValue()
     assert(true==myTSDB.WriteValue("Sensor2", 19.2f));
     SetMockTime(2017, 10, 24, 7, 11, 6);
     assert(true==myTSDB.WriteTimeValue("Sensor2", 20.5f, time(nullptr)-500));
-    assert(false==myTSDB.WriteOldValue("Sensor2", 20.1f, time(nullptr)-700));
+    assert(false==myTSDB.WriteTimeValue("Sensor2", 20.1f, time(nullptr)-700));
     myError = myTSDB.GetLastError("Sensor2");
     assert("WRITE_MRV"==myError.Code);
 

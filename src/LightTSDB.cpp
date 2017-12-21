@@ -905,6 +905,7 @@ HourlyTimestamp_t LtsdbFile::ReadHourlyTimestamp()
 
 bool LtsdbFile::ReadValue(HourlyOffset_t* offset, void* pValue, int valueSize)
 {
+    *offset = ENDLINE;
     m_InternalFile.read(reinterpret_cast<char *>(offset), sizeof(HourlyOffset_t));
     if(*offset==ENDLINE) return true;
     m_InternalFile.read(reinterpret_cast<char *>(pValue), valueSize);
