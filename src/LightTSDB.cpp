@@ -794,13 +794,16 @@ void ResamplingHelper::Average(time_t timeBegin, const list<DataValue>& values, 
 
 void ResamplingHelper::PreserveExtremum(const vector<AverageValue>& averages, list<DataValue>& values)
 {
-    vector<AverageValue>::const_iterator it, itEnd;
+    vector<AverageValue>::const_iterator it, itEnd, itBack, itNext;
     int i = 0;
     int aSize = averages.size();
     UValue uvalue;
 
     it = averages.begin();
     itEnd = averages.end();
+    itBack = it;
+    itNext = it;
+    ++itNext;
     values.clear();
 
     while(it!=itEnd)
@@ -810,12 +813,12 @@ void ResamplingHelper::PreserveExtremum(const vector<AverageValue>& averages, li
             uvalue.Float = it->average;
             values.emplace_back(it->time, uvalue);
         }
-        else if((averages[i-1].average>it->average)&&(it->average<averages[i+1].average))
+        else if((itBack->average>it->average)&&(it->average<itNext->average))
         {
             uvalue.Float = it->mini;
             values.emplace_back(it->time, uvalue);
         }
-        else if((averages[i-1].average<it->average)&&(it->average>averages[i+1].average))
+        else if((itBack->average<it->average)&&(it->average>itNext->average))
         {
             uvalue.Float = it->maxi;
             values.emplace_back(it->time, uvalue);
@@ -825,8 +828,10 @@ void ResamplingHelper::PreserveExtremum(const vector<AverageValue>& averages, li
             uvalue.Float = it->average;
             values.emplace_back(it->time, uvalue);
         }
-        ++i;
+        if(i>0) ++itBack;
+        ++itNext;
         ++it;
+        ++i;
     }
 }
 
@@ -930,6 +935,7 @@ bool LtsdbFile::ReadHeader(std::string* signature, uint8_t* version, FileDataTyp
     int sigSize = SIGNATURE.size();
     char charsig[sigSize+1];
 
+    *charsig = '\0';
     m_InternalFile.read(charsig, sigSize);
     charsig[sigSize] = 0;
     *signature = charsig;
