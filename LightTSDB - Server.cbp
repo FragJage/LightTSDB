@@ -17,6 +17,7 @@
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
+					<Add library="ws2_32" />
 				</Linker>
 			</Target>
 			<Target title="Debug">
@@ -36,16 +37,46 @@
 			<Add option="-Wall" />
 			<Add option="-std=c++11" />
 			<Add option="-m32" />
+			<Add option="-DNO_WEBSOCKET" />
+			<Add option="-DENABLE_REGEX_URL" />
 			<Add directory="dependency" />
 			<Add directory="src" />
+			<Add directory="dependency/mongoose" />
 		</Compiler>
 		<Linker>
 			<Add option="-m32" />
 			<Add option="-pg" />
 		</Linker>
+		<Unit filename="dependency/mongoose-cpp/Controller.cpp" />
+		<Unit filename="dependency/mongoose-cpp/Controller.h" />
+		<Unit filename="dependency/mongoose-cpp/Mutex.cpp" />
+		<Unit filename="dependency/mongoose-cpp/Mutex.h" />
+		<Unit filename="dependency/mongoose-cpp/Request.cpp" />
+		<Unit filename="dependency/mongoose-cpp/Request.h" />
+		<Unit filename="dependency/mongoose-cpp/RequestHandler.h" />
+		<Unit filename="dependency/mongoose-cpp/Response.cpp" />
+		<Unit filename="dependency/mongoose-cpp/Response.h" />
+		<Unit filename="dependency/mongoose-cpp/Server.cpp" />
+		<Unit filename="dependency/mongoose-cpp/Server.h" />
+		<Unit filename="dependency/mongoose-cpp/Session.cpp" />
+		<Unit filename="dependency/mongoose-cpp/Session.h" />
+		<Unit filename="dependency/mongoose-cpp/Sessions.cpp" />
+		<Unit filename="dependency/mongoose-cpp/Sessions.h" />
+		<Unit filename="dependency/mongoose-cpp/StreamResponse.cpp" />
+		<Unit filename="dependency/mongoose-cpp/StreamResponse.h" />
+		<Unit filename="dependency/mongoose-cpp/UploadFile.cpp" />
+		<Unit filename="dependency/mongoose-cpp/UploadFile.h" />
+		<Unit filename="dependency/mongoose-cpp/Utils.cpp" />
+		<Unit filename="dependency/mongoose-cpp/Utils.h" />
+		<Unit filename="dependency/mongoose-cpp/WebController.cpp" />
+		<Unit filename="dependency/mongoose-cpp/WebController.h" />
+		<Unit filename="dependency/mongoose/mongoose.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="dependency/mongoose/mongoose.h" />
+		<Unit filename="server/main.cpp" />
 		<Unit filename="src/LightTSDB.cpp" />
 		<Unit filename="src/LightTSDB.h" />
-		<Unit filename="server/main.cpp" />
 		<Extensions>
 			<code_completion />
 			<envvars />
