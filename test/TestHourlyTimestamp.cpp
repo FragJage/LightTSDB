@@ -29,7 +29,7 @@ bool TestHourlyTimestamp::FromTimeT()
     timeinfo.tm_isdst = 0;
     timeT = mktime(&timeinfo);
 
-    nbHours = timeT/3600;
+    nbHours = (uint32_t) timeT/3600;
     assert(nbHours==LightTSDB::HourlyTimestamp::FromTimeT(timeT));
 
     return true;
@@ -54,7 +54,11 @@ bool TestHourlyTimestamp::ToString()
     struct tm stime;
     ostringstream oss;
 
-    localtime_r(&ttime, &stime);
+	#ifdef _MSC_VER
+		localtime_s(&stime, &ttime);
+	#else
+		localtime_r(&ttime, &stime);
+	#endif
     oss << "2017/10/4 " << stime.tm_hour << "h";
 
     assert(oss.str()==LightTSDB::HourlyTimestamp::ToString(hourTS));

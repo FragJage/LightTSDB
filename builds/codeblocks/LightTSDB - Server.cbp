@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="LightTSDB - Server" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Release">
+				<Option output="bin/LightTSDBserver" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="../.." />
+				<Option object_output="obj/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-DWIN" />
+					<Add directory="../../server" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+			<Target title="Debug">
+				<Option output="bin/LightTSDBserver" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="../.." />
+				<Option object_output="obj/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-g" />
+					<Add option="-DDEBUG" />
+					<Add option="-DWIN" />
+					<Add directory="../../server" />
+				</Compiler>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+			<Add option="-std=c++11" />
+			<Add option="-m32" />
+			<Add option="-DMG_ENABLE_CALLBACK_USERDATA" />
+			<Add option="-DWIN32" />
+			<Add directory="../../src" />
+			<Add directory="../../server/MongooseCpp" />
+			<Add directory="../../server" />
+		</Compiler>
+		<Linker>
+			<Add option="-m32" />
+			<Add option="-pg" />
+			<Add library="ws2_32" />
+		</Linker>
+		<Unit filename="../../server/LastController.cpp" />
+		<Unit filename="../../server/LastController.h" />
+		<Unit filename="../../server/LtsdbFactory.cpp" />
+		<Unit filename="../../server/LtsdbFactory.h" />
+		<Unit filename="../../server/MongooseCpp/IWebController.h" />
+		<Unit filename="../../server/MongooseCpp/Request.cpp" />
+		<Unit filename="../../server/MongooseCpp/Request.h" />
+		<Unit filename="../../server/MongooseCpp/Response.cpp" />
+		<Unit filename="../../server/MongooseCpp/Response.h" />
+		<Unit filename="../../server/MongooseCpp/WebServer.cpp" />
+		<Unit filename="../../server/MongooseCpp/WebServer.h" />
+		<Unit filename="../../server/ReadController.cpp" />
+		<Unit filename="../../server/ReadController.h" />
+		<Unit filename="../../server/TimeHelper.cpp" />
+		<Unit filename="../../server/TimeHelper.h" />
+		<Unit filename="../../server/WelcomeController.cpp" />
+		<Unit filename="../../server/WelcomeController.h" />
+		<Unit filename="../../server/WriteController.cpp" />
+		<Unit filename="../../server/WriteController.h" />
+		<Unit filename="../../server/main.cpp" />
+		<Unit filename="../../server/mongoose/mongoose.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../server/mongoose/mongoose.h" />
+		<Unit filename="../../src/LightTSDB.cpp" />
+		<Unit filename="../../src/LightTSDB.h" />
+		<Extensions>
+			<code_completion />
+			<envvars />
+			<debugger />
+			<lib_finder disable_auto="1" />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

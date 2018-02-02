@@ -1,3 +1,4 @@
+#include<iostream>
 #include<ctime>
 
 time_t MockTime;
@@ -18,11 +19,15 @@ void MockAddSecond(int sec)
     MockTime += sec;
 }
 
+#ifndef _MSC_VER
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
-time_t time(time_t* timer)
+#endif
+time_t mocktime(time_t* timer)
 {
     if(timer!=nullptr) *timer = MockTime;
     return MockTime;
 }
+#ifndef _MSC_VER
 #pragma GCC diagnostic pop
+#endif

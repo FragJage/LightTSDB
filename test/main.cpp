@@ -22,7 +22,6 @@ using namespace std;
 //Mutex for maps access
 //Tool for check data file
 //Tool for repair data file
-//Use libUV via UVWrapper ?
 
 vector<int> RandomIntervalTime;
 vector<time_t> RandomValuesTime;
@@ -33,7 +32,7 @@ string SensorName = "LucileBedRoomTemperature";
 
 void BuildRandomValues()
 {
-    int nbmax = 1000000;
+    int nbmax = 10; //1000000;
     float myTemp = 21.0;
     random_device rd;
     mt19937 gen(rd());
@@ -166,7 +165,8 @@ int main()
     BuildRandomValues();
     MeasureWritingTime();
     MeasureContiguousReading();
-    MeasureRandomReading();
+    return 0;
+    //MeasureRandomReading();
     CleanUp();
     cout << endl;
 

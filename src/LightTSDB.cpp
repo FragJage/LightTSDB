@@ -18,11 +18,16 @@
     along with LightTSDB.  If not, see <http://www.gnu.org/licenses/>.
 */
 /***************************************************************************************************/
-#include <cstring>      //for strerror
-#include <dirent.h>     //for opendir & readdir
+#include <cstring>					//for strerror
+#ifdef _MSC_VER
+	#include "dirent/dirent.h"		//for opendir & readdir
+#else
+	#include <dirent.h>				//for opendir & readdir
+#endif // #ifdef _MSC_VER
 #include <sstream>
 #include <algorithm>
 #include "LightTSDB.h"
+#include "TimeMockable.h"
 
 using namespace std;
 
@@ -103,7 +108,7 @@ bool LightTSDB::internalWriteValue(const string& sensor, void* value, FileDataTy
     if(filesInfo == nullptr) return false;
 
     time_t now;
-    time(&now);
+    MOCK::time(&now);
     return writeTimeValue(filesInfo, value, now);
 }
 
@@ -137,7 +142,7 @@ bool LightTSDB::internalWriteOldValue(const std::string& sensor, void* pValue, u
     if(filesInfo == nullptr) return false;
 
     time_t oldTime;
-    time(&oldTime);
+    MOCK::time(&oldTime);
     oldTime -= offset;
 
     if((filesInfo->maxHour>0)&&(oldTime <= HourlyTimestamp::ToTimeT(filesInfo->maxHour, filesInfo->maxOffset)))
@@ -204,7 +209,7 @@ bool LightTSDB::writeTimeValue(FilesInfo* filesInfo, void* pValue, time_t timest
         filesInfo->maxHour = hourlyTimestamp;
     }
 
-    HourlyOffset_t offset = difftime(timestamp, filesInfo->startHour);
+    HourlyOffset_t offset = (HourlyOffset_t) difftime(timestamp, filesInfo->startHour);
     if(!filesInfo->data->WriteValue(offset, pValue, filesInfo->valueSize)) return false;
     filesInfo->maxOffset = offset;
 
@@ -334,12 +339,12 @@ bool LightTSDB::Remove(const std::string& sensor)
     Close(sensor);
     if(remove(getFileName(sensor, FileType::index).c_str())!=0)
     {
-        setLastError(sensor, "REMOVE_NDX", "Unable to remove LightTSDB index file.", strerror(errno));
+        setLastError(sensor, "REMOVE_NDX", "Unable to remove LightTSDB index file.", getSystemErrorMsg(errno));
         ret = false;
     }
     if(remove(getFileName(sensor, FileType::data).c_str())!=0)
     {
-        setLastError(sensor, "REMOVE_DAT", "Unable to remove LightTSDB data file.", strerror(errno));
+        setLastError(sensor, "REMOVE_DAT", "Unable to remove LightTSDB data file.", getSystemErrorMsg(errno));
         ret = false;
     }
 
@@ -439,13 +444,13 @@ bool LightTSDB::openDataFile(FilesInfo& filesInfo)
     filesInfo.data = new LtsdbFile();
     if(!filesInfo.data->Open(getFileName(filesInfo.sensor, FileType::data)))
     {
-        setLastError(filesInfo.sensor, "OPEN_DAT1", "Unable to open data file.", strerror(errno));
+        setLastError(filesInfo.sensor, "OPEN_DAT1", "Unable to open data file.", getSystemErrorMsg(errno));
         return false;
     }
     filesInfo.data->Seekg(0, std::ios::beg);
     if(!filesInfo.data->ReadHeader(&signature, &(filesInfo.version), &(filesInfo.type), &(filesInfo.options), &fileState))
     {
-        setLastError(filesInfo.sensor, "OPEN_DAT2", "Unable to read header of data file.", strerror(errno));
+        setLastError(filesInfo.sensor, "OPEN_DAT2", "Unable to read header of data file.", getSystemErrorMsg(errno));
         return false;
     }
     filesInfo.valueSize = getValueSize(filesInfo.type);
@@ -472,13 +477,13 @@ bool LightTSDB::openIndexFile(FilesInfo& filesInfo)
     filesInfo.index = new LtsdbFile();
     if(!filesInfo.index->Open(getFileName(filesInfo.sensor, FileType::index)))
     {
-        setLastError(filesInfo.sensor, "OPEN_NDX1", "Unable to open index file.", strerror(errno));
+        setLastError(filesInfo.sensor, "OPEN_NDX1", "Unable to open index file.", getSystemErrorMsg(errno));
         return false;
     }
     filesInfo.index->Seekg(0, std::ios::beg);
     if(!filesInfo.index->ReadHeader(&signature, &version, &dataType, &options, &fileState))
     {
-        setLastError(filesInfo.sensor, "OPEN_NDX2", "Unable to read header of index file.", strerror(errno));
+        setLastError(filesInfo.sensor, "OPEN_NDX2", "Unable to read header of index file.", getSystemErrorMsg(errno));
         return false;
     }
     if(!checkHeader(filesInfo.sensor, signature, version, fileState, FileType::index)) return false;
@@ -507,24 +512,24 @@ bool LightTSDB::createFiles(LightTSDB::FilesInfo& filesInfo, FileDataType valueT
     filesInfo.data = new LtsdbFile();
     if(!filesInfo.data->Open(getFileName(filesInfo.sensor, data)))
     {
-        setLastError(filesInfo.sensor, "CREATE_DAT1", "Unable to create data file.", strerror(errno));
+        setLastError(filesInfo.sensor, "CREATE_DAT1", "Unable to create data file.", getSystemErrorMsg(errno));
         return false;
     }
     if(!filesInfo.data->WriteHeader(SIGNATURE, VERSION, valueType, 0, FileState::Stable))
     {
-        setLastError(filesInfo.sensor, "CREATE_DAT2", "Unable to write header of data file.", strerror(errno));
+		setLastError(filesInfo.sensor, "CREATE_DAT2", "Unable to write header of data file.", getSystemErrorMsg(errno));
         return false;
     }
 
     filesInfo.index = new LtsdbFile();
     if(!filesInfo.index->Open(getFileName(filesInfo.sensor, index)))
     {
-        setLastError(filesInfo.sensor, "CREATE_NDX1", "Unable to create index file.", strerror(errno));
+		setLastError(filesInfo.sensor, "CREATE_NDX1", "Unable to create index file.", getSystemErrorMsg(errno));
         return false;
     }
     if(!filesInfo.index->WriteHeader(SIGNATURE, VERSION, valueType, 0, FileState::Stable))
     {
-        setLastError(filesInfo.sensor, "CREATE_NDX2", "Unable to write header of index file.", strerror(errno));
+		setLastError(filesInfo.sensor, "CREATE_NDX2", "Unable to write header of index file.", getSystemErrorMsg(errno));
         return false;
     }
 
@@ -622,6 +627,18 @@ streampos LightTSDB::findIndex(FilesInfo* filesInfo, HourlyTimestamp_t hourlyTim
     return 0;
 }
 
+string LightTSDB::getSystemErrorMsg(int errorNumber)
+{
+	#ifdef __MINGW32__
+        char* errorMsg;
+        errorMsg = strerror(errorNumber);
+    #else
+        char errorMsg[256];
+        strerror_s(errorMsg, 256, errorNumber);
+    #endif
+	return string(errorMsg);
+}
+
 void LightTSDB::setLastError(const string& sensor, const string& code, const string& errMessage, const string& sysMessage)
 {
     ErrorInfo errorInfo;
@@ -673,7 +690,7 @@ int LightTSDB::getValueSize(FileDataType valueType)
 /**************************************************************************************************************/
 HourlyTimestamp_t HourlyTimestamp::FromTimeT(time_t time)
 {
-    HourlyTimestamp_t hourlyTimestamp = time/3600;
+    HourlyTimestamp_t hourlyTimestamp = (HourlyTimestamp_t) (time/3600);
     return hourlyTimestamp;
 }
 
@@ -722,7 +739,7 @@ int HourlyTimestamp::VerifyDataHourlyTimestamp(HourlyTimestamp_t hourIndex, stre
     }
 
     time_t tMax = HourlyTimestamp::ToTimeT(hourData, offsetMax);
-    time_t tCur = time(0);
+    time_t tCur = MOCK::time(0);
     if(tMax>tCur) return -2;
 
     data->Seekg(0, std::ios::end);
@@ -735,7 +752,11 @@ std::string HourlyTimestamp::ToString(HourlyTimestamp_t hourlyTimestamp)
     struct tm stime;
     ostringstream oss;
 
-    localtime_r(&ttime, &stime);
+	#ifdef _MSC_VER
+		localtime_s(&stime, &ttime);
+	#else
+		localtime_r(&ttime, &stime);
+	#endif
 
     oss << 1900+stime.tm_year << "/" << 1+stime.tm_mon << "/" << stime.tm_mday << " " << stime.tm_hour << "h";
     return oss.str();
@@ -823,51 +844,6 @@ void ResamplingHelper::PreserveExtremum(const vector<AverageValue>& averages, li
         }
     }
 }
-
-/*
-void ResamplingHelper::PreserveExtremum(const vector<AverageValue>& averages, list<DataValue>& values)
-{
-    vector<AverageValue>::const_iterator it, itEnd, itBack, itNext;
-    int i = 0;
-    int aSize = averages.size();
-    UValue uvalue;
-
-    it = averages.begin();
-    itEnd = averages.end();
-    itBack = it;
-    itNext = it;
-    ++itNext;
-    values.clear();
-
-    while(it!=itEnd)
-    {
-        if((i==0)||(i==aSize))
-        {
-            uvalue.Float = it->average;
-            values.emplace_back(it->time, uvalue);
-        }
-        else if((itBack->average>it->average)&&(it->average<itNext->average))
-        {
-            uvalue.Float = it->mini;
-            values.emplace_back(it->time, uvalue);
-        }
-        else if((itBack->average<it->average)&&(it->average>itNext->average))
-        {
-            uvalue.Float = it->maxi;
-            values.emplace_back(it->time, uvalue);
-        }
-        else
-        {
-            uvalue.Float = it->average;
-            values.emplace_back(it->time, uvalue);
-        }
-        if(i>0) ++itBack;
-        ++itNext;
-        ++it;
-        ++i;
-    }
-}
-*/
 
 /**************************************************************************************************************/
 /***                                                                                                        ***/
@@ -967,12 +943,14 @@ bool LtsdbFile::WriteEndLine()
 bool LtsdbFile::ReadHeader(std::string* signature, uint8_t* version, FileDataType* type, uint8_t* options, FileState* state)
 {
     int sigSize = SIGNATURE.size();
-    char charsig[sigSize+1];
 
+	char* charsig = new char[sigSize + 1];
     *charsig = '\0';
     m_InternalFile.read(charsig, sigSize);
     charsig[sigSize] = 0;
     *signature = charsig;
+	delete charsig;
+
     m_InternalFile.read(reinterpret_cast<char *>(version), sizeof(uint8_t));
     m_InternalFile.read(reinterpret_cast<char *>(type), sizeof(uint8_t));
     m_InternalFile.read(reinterpret_cast<char *>(options), sizeof(uint8_t));
@@ -992,7 +970,13 @@ bool LtsdbFile::WriteHeader(std::string signature, const uint8_t version, const 
 
 bool LtsdbFile::FileExists(const string& fileName)
 {
-    if (FILE *file = fopen(fileName.c_str(), "r"))
+	FILE *file;
+
+	#ifdef __MINGW32__
+	if ((file = fopen(fileName.c_str(), "r"))!=nullptr)
+    #else
+    if (fopen_s(&file, fileName.c_str(), "r")==0)
+    #endif
     {
         fclose(file);
         return true;

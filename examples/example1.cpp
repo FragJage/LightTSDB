@@ -19,7 +19,7 @@ int main()
 
 
     ///*** Write float value
-    float temperature = 22.35;
+    float temperature = 22.35f;
     myTSDB.WriteValue("BedRoomTemperature", temperature);
 
     ///*** Write bool value

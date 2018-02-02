@@ -23,7 +23,11 @@ int main()
 
     myTSDB.SetFolder("test/data");
 
-    localtime_r(&start, &tmtime);
+	#ifdef _MSC_VER
+		localtime_s(&tmtime, &start);
+	#else
+		localtime_r(&start, &tmtime);
+	#endif
     cout << setfill('0');
     cout << "Read data for the day " << 1900+tmtime.tm_year << "/" << setw(2) << tmtime.tm_mon << "/" << setw(2) << tmtime.tm_mday;
     cout << " between " <<  setw(2) << tmtime.tm_hour << ":00 and " <<  setw(2) << tmtime.tm_hour << ":59" << endl;
@@ -39,7 +43,11 @@ int main()
 
     for(list<LightTSDB::DataValue>::const_iterator it=myValues.begin(); it!=myValues.end(); ++it)
     {
-        localtime_r(&(it->time), &tmtime);
+		#ifdef _MSC_VER
+			localtime_s(&tmtime, &(it->time));
+		#else
+			localtime_r(&(it->time), &tmtime);
+		#endif
         cout << setw(2) << tmtime.tm_hour << ":" << setw(2) << tmtime.tm_min << ":" << setw(2) << tmtime.tm_sec;
         cout << " => " << it->value.Float << endl;
     }
@@ -55,7 +63,11 @@ int main()
 
     for(list<LightTSDB::DataValue>::const_iterator it=myValues.begin(); it!=myValues.end(); ++it)
     {
-        localtime_r(&(it->time), &tmtime);
+		#ifdef _MSC_VER
+			localtime_s(&tmtime, &(it->time));
+		#else
+			localtime_r(&(it->time), &tmtime);
+		#endif
         cout << setw(2) << tmtime.tm_hour << ":" << setw(2) << tmtime.tm_min << ":" << setw(2) << tmtime.tm_sec;
         cout << " => " << it->value.Float << endl;
     }

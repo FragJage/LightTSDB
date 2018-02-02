@@ -51,14 +51,14 @@ bool RebuildIndex::renameFileIndex()
     {
         if(remove(backupFile.c_str())!=0)
         {
-            setLastErrorRebuild("REMOVE_BAK", "Unable to remove LightTSDB old backup index file.", strerror(errno));
+            setLastErrorRebuild("REMOVE_BAK", "Unable to remove LightTSDB old backup index file.", getSystemErrorMsg(errno));
             return false;
         }
     }
 
     if(rename(indexFile.c_str(), backupFile.c_str())!=0)
     {
-        setLastErrorRebuild("RENAME_BAK", "Unable to create LightTSDB backup index file.", strerror(errno));
+        setLastErrorRebuild("RENAME_BAK", "Unable to create LightTSDB backup index file.", getSystemErrorMsg(errno));
         return false;
     }
 
@@ -69,13 +69,13 @@ bool RebuildIndex::openFiles()
 {
     if(!m_Data.Open(getFileName(m_Sensor, data)))
     {
-        setLastErrorRebuild("OPEN_DAT", "Unable to open LightTSDB data file.", strerror(errno));
+        setLastErrorRebuild("OPEN_DAT", "Unable to open LightTSDB data file.", getSystemErrorMsg(errno));
         return false;
     }
 
     if(!m_Index.Open(getFileName(m_Sensor, index)))
     {
-        setLastErrorRebuild("CREATE_NDX", "Unable to create LightTSDB index file.", strerror(errno));
+        setLastErrorRebuild("CREATE_NDX", "Unable to create LightTSDB index file.", getSystemErrorMsg(errno));
         return false;
     }
 
@@ -92,7 +92,7 @@ bool RebuildIndex::createHeader()
 
     if(!m_Data.ReadHeader(&signature, &version, &type, &options, &state))
     {
-        setLastErrorRebuild("HEADER_REA", "Unable to read header into LightTSDB data file.", strerror(errno));
+        setLastErrorRebuild("HEADER_REA", "Unable to read header into LightTSDB data file.", getSystemErrorMsg(errno));
         return false;
     }
 
@@ -112,7 +112,7 @@ bool RebuildIndex::createHeader()
 
     if(!m_Index.WriteHeader(signature, version, type, options, FileState::Stable))
     {
-        setLastErrorRebuild("HEADER_WRI", "Unable to write header in LightTSDB index file.", strerror(errno));
+        setLastErrorRebuild("HEADER_WRI", "Unable to write header in LightTSDB index file.", getSystemErrorMsg(errno));
         return false;
     }
 
@@ -133,12 +133,12 @@ bool RebuildIndex::buildBody()
 
         if(!m_Index.WriteHourlyTimestamp(hour))
         {
-            setLastErrorRebuild("HOUR_WRI", "Unable to write hour timestamp in LightTSDB index file.", strerror(errno));
+            setLastErrorRebuild("HOUR_WRI", "Unable to write hour timestamp in LightTSDB index file.", getSystemErrorMsg(errno));
             return false;
         }
         if(!m_Index.WriteStreamOffset(pos))
         {
-            setLastErrorRebuild("OFFSET_WRI", "Unable to write offset in LightTSDB index file.", strerror(errno));
+            setLastErrorRebuild("OFFSET_WRI", "Unable to write offset in LightTSDB index file.", getSystemErrorMsg(errno));
             return false;
         }
 

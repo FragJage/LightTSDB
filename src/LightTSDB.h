@@ -244,6 +244,7 @@ class LightTSDB
         std::string getFileName(const std::string& sensor, const FileType fileType);
         bool checkHeader(const std::string& sensor, const std::string& signature, uint8_t version, FileState state, FileType fileType);
         int getValueSize(FileDataType valueType);
+		std::string getSystemErrorMsg(int errorNumber);
 
     private:
         struct FilesInfo

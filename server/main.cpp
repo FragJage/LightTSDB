@@ -1,47 +1,29 @@
-#include <stdlib.h>
-#include <signal.h>
-#include <mongoose-cpp/Server.h>
-#include <mongoose-cpp/WebController.h>
+#include "WebServer.h"
+#include "WelcomeController.h"
+#include "ReadController.h"
+#include "LastController.h"
+#include "WriteController.h"
 
 using namespace std;
-using namespace Mongoose;
-
-class MyController : public WebController
-{
-    public:
-        void hello(Request &request, StreamResponse &response)
-        {
-            response << "Hello " << htmlEntities(request.get("name", "... what's your name ?")) << endl;
-        }
-
-        void setup()
-        {
-            addRoute("GET", "/hello", MyController, hello);
-        }
-};
-
-class ApiController : public Controller
-{
-    public:
-        void webapi(Request &request, StreamResponse &response)
-        {
-            response << "Hello api v1" << endl;
-        }
-
-        void setup()
-        {
-            addRoute("GET", "/api/v1/(.+)/(.+)", ApiController, webapi);
-        }
-};
+using namespace MongooseCpp;
 
 int main()
 {
-    MyController myController;
-    Server server(8080);
-    server.registerController(&myController);
+    ReadController readController;
+    LastController lastController;
+    WriteController writeController;
+    WelcomeController welcomeController;
+    WebServer server(8080);
 
-    server.start();
+    server.AddRoute("/read/{BaseName}/[SensorId]", &readController);
+    server.AddRoute("/lastvalue/{BaseName}/{SensorId}", &lastController);
+    server.AddRoute("/write/{BaseName}/{SensorId}", &writeController);
+    server.AddRoute("*", &welcomeController);
 
-    string key;
-    cin >> key;
+    server.Start();
+    while(true)
+    {
+        server.Poll();
+    }
+    server.Stop();
 }

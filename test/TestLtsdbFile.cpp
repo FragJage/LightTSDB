@@ -74,7 +74,7 @@ bool TestLtsdbFile::RWValue()
 {
     LightTSDB::LtsdbFile myFile;
     LightTSDB::HourlyOffset_t writeHo = 1583;
-    float writeValue = 25.45;
+    float writeValue = 25.45f;
     LightTSDB::HourlyOffset_t readHo;
     LightTSDB::UValue readValue;
 
