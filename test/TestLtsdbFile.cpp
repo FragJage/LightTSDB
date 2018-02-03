@@ -53,7 +53,7 @@ bool TestLtsdbFile::RWStreamOffset()
 bool TestLtsdbFile::RWHourlyTimestamp()
 {
     LightTSDB::LtsdbFile myFile;
-    LightTSDB::HourlyTimestamp_t writeHt = LightTSDB::HourlyTimestamp::FromTimeT(time(0));
+    LightTSDB::HourlyTimestamp_t writeHt = LightTSDB::HourlyTimestamp::FromTimeT(MOCK::time(0));
     streampos movePos;
 
 

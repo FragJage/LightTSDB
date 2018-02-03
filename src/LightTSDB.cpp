@@ -27,7 +27,6 @@
 #include <sstream>
 #include <algorithm>
 #include "LightTSDB.h"
-#include "TimeMockable.h"
 
 using namespace std;
 
@@ -632,9 +631,12 @@ string LightTSDB::getSystemErrorMsg(int errorNumber)
 	#ifdef __MINGW32__
         char* errorMsg;
         errorMsg = strerror(errorNumber);
-    #else
+    #elseif _MSC_VER
         char errorMsg[256];
         strerror_s(errorMsg, 256, errorNumber);
+    #else
+        char errorMsg[256];
+        strerror_r(errorNumber, errorMsg, 256);
     #endif
 	return string(errorMsg);
 }
@@ -972,10 +974,10 @@ bool LtsdbFile::FileExists(const string& fileName)
 {
 	FILE *file;
 
-	#ifdef __MINGW32__
-	if ((file = fopen(fileName.c_str(), "r"))!=nullptr)
-    #else
+	#ifdef _MSV_VER
     if (fopen_s(&file, fileName.c_str(), "r")==0)
+    #else
+	if ((file = fopen(fileName.c_str(), "r"))!=nullptr)
     #endif
     {
         fclose(file);
@@ -989,4 +991,16 @@ bool LtsdbFile::Is_Open()
     return m_InternalFile.is_open();
 }
 
+}
+
+extern time_t mocktime(time_t* ptr);
+namespace MOCK {
+	time_t time(time_t* ptr)
+	{
+#ifdef USE_MOCKS
+		return mocktime(ptr);
+#else
+		return std::time(ptr);
+#endif
+	}
 }

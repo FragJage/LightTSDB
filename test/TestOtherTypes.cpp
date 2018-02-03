@@ -38,7 +38,7 @@ bool TestOtherTypes::WriteBool()
     bool bval;
 
     SetMockTime(2017, 10, 26, 15, 13, 8);
-    time(&m_LastTime);
+    MOCK::time(&m_LastTime);
     bval = true;
     assert(true==myTSDB.WriteOldValue("BoolSensor", bval, 500));
     bval = false;
@@ -77,7 +77,7 @@ bool TestOtherTypes::WriteInt()
     ival = 1234567898;
     assert(true==myTSDB.WriteOldValue("IntSensor", ival, 900));
     ival = 1234567900;
-    assert(true==myTSDB.WriteTimeValue("IntSensor", ival, time(nullptr)-400));
+    assert(true==myTSDB.WriteTimeValue("IntSensor", ival, MOCK::time(nullptr)-400));
     ival = 1234567902;
     assert(true==myTSDB.WriteValue("IntSensor", ival));
 
@@ -101,7 +101,7 @@ bool TestOtherTypes::WriteDouble()
     double dval;
 
     SetMockTime(2017, 10, 28, 15, 33, 8);
-    time(&m_LastTime);
+    MOCK::time(&m_LastTime);
     dval = 2.123456789;
     assert(true==myTSDB.WriteValue("DoubleSensor", dval));
     MockAddSecond(600);

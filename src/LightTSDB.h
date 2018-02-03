@@ -320,4 +320,9 @@ class ResamplingHelper
 };
 
 }
+
+namespace MOCK {
+	time_t time(time_t* ptr);
+}
+
 #endif // LIGHTTSDB_H

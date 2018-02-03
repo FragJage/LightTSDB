@@ -41,7 +41,7 @@ bool TestLightTSDB::CreateDB()
     list<LightTSDB::DataValue>::const_iterator it, itEnd;
 
     SetMockTime(2017, 10, 24, 10, 2, 25);
-    time(&m_start1);
+    MOCK::time(&m_start1);
     for(i=0; i<20; i++)
     {
         assert(true==myTSDB.WriteValue("MySensor", temp));
@@ -77,7 +77,7 @@ bool TestLightTSDB::OpenDB()
     list<LightTSDB::DataValue>::const_iterator it, itEnd;
 
     SetMockTime(2017, 10, 24, 12, 1, 5);
-    time(&m_start2);
+    MOCK::time(&m_start2);
     for(i=0; i<20; i++)
     {
         assert(true==myTSDB.WriteValue("MySensor", temp));
@@ -112,8 +112,8 @@ bool TestLightTSDB::WriteTimeValue()
     SetMockTime(2017, 10, 24, 7, 2, 6);
     assert(true==myTSDB.WriteValue("Sensor2", 19.2f));
     SetMockTime(2017, 10, 24, 7, 11, 6);
-    assert(true==myTSDB.WriteTimeValue("Sensor2", 20.5f, time(nullptr)-500));
-    assert(false==myTSDB.WriteTimeValue("Sensor2", 20.1f, time(nullptr)-700));
+    assert(true==myTSDB.WriteTimeValue("Sensor2", 20.5f, MOCK::time(nullptr)-500));
+    assert(false==myTSDB.WriteTimeValue("Sensor2", 20.1f, MOCK::time(nullptr)-700));
     myError = myTSDB.GetLastError("Sensor2");
     assert("WRITE_MRV"==myError.Code);
 
@@ -245,7 +245,7 @@ bool TestLightTSDB::IndexSearch()
     time_t start;
 
     SetMockTime(2017, 10, 25, 14, 2, 7);
-    time(&start);
+    MOCK::time(&start);
     assert(true==myTSDB.WriteValue("Sensor2", 21.3f));
     assert(true==myTSDB.ReadValues("Sensor2", start, values));
     assert(1==values.size());

@@ -32,7 +32,7 @@ string SensorName = "LucileBedRoomTemperature";
 
 void BuildRandomValues()
 {
-    int nbmax = 10; //1000000;
+    int nbmax = 1000000;
     float myTemp = 21.0;
     random_device rd;
     mt19937 gen(rd());
@@ -47,7 +47,7 @@ void BuildRandomValues()
         myTemp += rdTemperature(gen);
         RandomValuesTemp.emplace_back(myTemp);
         MockAddSecond(RandomIntervalTime[i]);
-        RandomValuesTime.emplace_back(time(0));
+        RandomValuesTime.emplace_back(MOCK::time(0));
     }
     nbmax = (nbmax/RandomReadSize);
     for(int i=0; i<nbmax; i++)
@@ -165,8 +165,7 @@ int main()
     BuildRandomValues();
     MeasureWritingTime();
     MeasureContiguousReading();
-    return 0;
-    //MeasureRandomReading();
+    MeasureRandomReading();
     CleanUp();
     cout << endl;
 

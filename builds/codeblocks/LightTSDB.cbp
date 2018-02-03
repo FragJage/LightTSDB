@@ -51,7 +51,6 @@
 		<Unit filename="../../dependency/UnitTest/termcolor.h" />
 		<Unit filename="../../src/LightTSDB.cpp" />
 		<Unit filename="../../src/LightTSDB.h" />
-		<Unit filename="../../src/TimeMockable.h" />
 		<Unit filename="../../test/TestHourlyTimestamp.cpp" />
 		<Unit filename="../../test/TestHourlyTimestamp.h" />
 		<Unit filename="../../test/TestLightTSDB.cpp" />
