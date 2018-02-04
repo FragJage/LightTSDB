@@ -30,6 +30,8 @@ file(
   ../dependency/UnitTest/*
 )
 
+add_definitions( -DUSE_MOCKS )
+
 #Déclaration de l'exécutable
 set(EXECUTABLE_OUTPUT_PATH bin/${CMAKE_BUILD_TYPE})
 add_executable(
