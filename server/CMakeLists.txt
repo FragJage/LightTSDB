@@ -7,7 +7,7 @@ endif ()
 
 include_directories(../src)
 include_directories(MongooseCpp)
-include_directories(mongoose)
+include_directories(.)
  
 #Génération de la liste des fichiers sources
 file(
