@@ -23,9 +23,9 @@ TestLightTSDB::TestLightTSDB() : TestClass("LightTSDB", this)
 
     LightTSDB::LightTSDB myTSDB;
     if(myTSDB.Remove("MySensor"))
-        cout << termcolor::red << "Remove old data." << endl;
+        cout << termcolor::red << "Remove old data for MySensor." << endl;
     if(myTSDB.Remove("Sensor2"))
-        cout << termcolor::red << "Remove old data." << endl;
+        cout << termcolor::red << "Remove old data for Sensor2." << endl;
 }
 
 TestLightTSDB::~TestLightTSDB()
@@ -258,7 +258,8 @@ bool TestLightTSDB::IndexSearch()
     MockAddSecond(3600);
     assert(true==myTSDB.WriteValue("Sensor2", 21.0f));
     assert(true==myTSDB.ReadValues("Sensor2", start+3600*4, values));
-    assert(1==values.size());
+cout << "2 : " << values.size() << endl;
+	assert(1==values.size());
     assert(21.5==values.begin()->value.Float);
 
     return true;

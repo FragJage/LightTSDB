@@ -628,10 +628,10 @@ streampos LightTSDB::findIndex(FilesInfo* filesInfo, HourlyTimestamp_t hourlyTim
 
 string LightTSDB::getSystemErrorMsg(int errorNumber)
 {
-	#ifdef __MINGW32__
+	#if defined(__MINGW32__)
         char* errorMsg;
         errorMsg = strerror(errorNumber);
-    #elseif _MSC_VER
+    #elif defined(_MSC_VER)
         char errorMsg[256];
         strerror_s(errorMsg, 256, errorNumber);
     #else
@@ -974,7 +974,7 @@ bool LtsdbFile::FileExists(const string& fileName)
 {
 	FILE *file;
 
-	#ifdef _MSV_VER
+	#ifdef _MSC_VER
     if (fopen_s(&file, fileName.c_str(), "r")==0)
     #else
 	if ((file = fopen(fileName.c_str(), "r"))!=nullptr)

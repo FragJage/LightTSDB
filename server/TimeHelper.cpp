@@ -6,8 +6,15 @@ using namespace std;
 string TimeHelper::ToString(time_t tTime)
 {
     char buf[32];
+	struct tm sTime;
 
-    strftime(buf, 32, "%Y-%m-%dT%H:%M:%S", localtime(&tTime));
+	#ifdef _MSC_VER
+		localtime_s(&sTime, &tTime);
+	#else
+		localtime_r(&tTime, &sTime);
+	#endif
+	
+	strftime(buf, 32, "%Y-%m-%dT%H:%M:%S", &sTime);
     return string(buf);
 }
 
