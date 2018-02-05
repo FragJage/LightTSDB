@@ -142,7 +142,6 @@
   <ItemGroup>
     <ClCompile Include="C:\Perso\Sources\LightTSDB\test\TimeMock.cpp" />
     <ClCompile Include="C:\Perso\Sources\LightTSDB\src\LightTSDB.cpp" />
-    <ClInclude Include="..\..\src\TimeMockable.h" />
     <ClInclude Include="..\..\test\TimeMock.h" />
     <ClInclude Include="C:\Perso\Sources\LightTSDB\src\LightTSDB.h" />
     <ClCompile Include="C:\Perso\Sources\LightTSDB\dependency\UnitTest\UnitTest.cpp" />
