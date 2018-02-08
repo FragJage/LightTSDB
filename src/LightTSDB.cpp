@@ -199,8 +199,8 @@ bool LightTSDB::writeTimeValue(FilesInfo* filesInfo, void* pValue, time_t timest
 
         HourlyTimestamp_t hourlyTimestamp = HourlyTimestamp::FromTimeT(timestamp);
         filesInfo->startHour = HourlyTimestamp::ToTimeT(hourlyTimestamp);
-        filesInfo->index->WriteHourlyTimestamp(hourlyTimestamp);
-        filesInfo->index->WriteStreamOffset(filesInfo->data->Tellp());
+		filesInfo->index->WriteHourlyTimestamp(hourlyTimestamp);
+		filesInfo->index->WriteStreamOffset(filesInfo->data->Tellp());
         filesInfo->indexSize += INDEX_STEP;
         filesInfo->data->WriteHourlyTimestamp(hourlyTimestamp);
 
@@ -597,7 +597,7 @@ streampos LightTSDB::findIndex(FilesInfo* filesInfo, HourlyTimestamp_t hourlyTim
     streampos pos;
     HourlyTimestamp_t foundTimestamp;
 
-    if(hourlyTimestamp < filesInfo->minHour) return 0;
+	if(hourlyTimestamp < filesInfo->minHour) return 0;
     if(hourlyTimestamp > filesInfo->maxHour) return 0;
 
     if(filesInfo->maxHour == filesInfo->minHour)
@@ -609,7 +609,12 @@ streampos LightTSDB::findIndex(FilesInfo* filesInfo, HourlyTimestamp_t hourlyTim
 
     filesInfo->index->Seekg(pos, std::ios::beg);
     foundTimestamp = filesInfo->index->ReadHourlyTimestamp();
-    if(foundTimestamp == hourlyTimestamp) return filesInfo->index->ReadStreamOffset();
+	if (foundTimestamp == hourlyTimestamp)
+	{
+		pos = filesInfo->index->ReadStreamOffset();
+		filesInfo->index->Seekp(0, std::ios::end);
+		return pos;
+	}
 
     if(foundTimestamp > hourlyTimestamp)
     {
@@ -618,12 +623,15 @@ streampos LightTSDB::findIndex(FilesInfo* filesInfo, HourlyTimestamp_t hourlyTim
             pos -= INDEX_STEP;
             if(!filesInfo->index->Seekg(pos, std::ios::beg)) return 0;
             foundTimestamp = filesInfo->index->ReadHourlyTimestamp();
-            if(foundTimestamp < hourlyTimestamp) return 0;
+			if(foundTimestamp < hourlyTimestamp) return 0;
         }
-        return filesInfo->index->ReadStreamOffset();
-    }
+		pos = filesInfo->index->ReadStreamOffset();
+		filesInfo->index->Seekp(0, std::ios::end);
+		return pos;
+	}
 
-    return 0;
+	filesInfo->index->Seekp(0, std::ios::end);
+	return 0;
 }
 
 string LightTSDB::getSystemErrorMsg(int errorNumber)
@@ -883,6 +891,12 @@ bool LtsdbFile::Seekg(streamoff off, ios_base::seekdir way)
     return true;
 }
 
+bool LtsdbFile::Seekp(streamoff off, ios_base::seekdir way)
+{
+	if (!m_InternalFile.seekp(off, way)) return false;
+	return true;
+}
+
 streampos LtsdbFile::Tellp()
 {
     return m_InternalFile.tellp();
@@ -895,7 +909,7 @@ streampos LtsdbFile::Tellg()
 
 bool LtsdbFile::WriteStreamOffset(streampos pos)
 {
-    m_InternalFile.write(reinterpret_cast<const char *>(&pos), sizeof(pos));
+	m_InternalFile.write(reinterpret_cast<const char *>(&pos), sizeof(pos));
     return m_InternalFile.good();
 }
 

@@ -18,8 +18,14 @@ bool TestTools::RebuildIndex()
     LightTSDB::LtsdbFile backup;
     LightTSDB::LtsdbFile rebuild;
 
-    string filename_backup = "test/data/LucileBedRoomTemperature.index.bak";
-    string filename_rebuild = "test/data/LucileBedRoomTemperature.index";
+#ifdef _MSC_VER
+    string filename_backup = "test/data/LucileBedRoomTemperatureWin.index.bak";
+    string filename_rebuild = "test/data/LucileBedRoomTemperatureWin.index";
+#else
+	string filename_backup = "test/data/LucileBedRoomTemperature.index.bak";
+	string filename_rebuild = "test/data/LucileBedRoomTemperature.index";
+#endif
+
     string signature_backup, signature_rebuild;
     uint8_t version_backup, version_rebuild;
     LightTSDB::FileDataType type_backup, type_rebuild;
@@ -30,7 +36,12 @@ bool TestTools::RebuildIndex()
 
 
     myRebuilder.SetFolder("test/data");
-    assert(true==myRebuilder.Rebuild("LucileBedRoomTemperature"));
+#ifdef _MSC_VER
+	assert(true == myRebuilder.Rebuild("LucileBedRoomTemperatureWin"));
+#else
+	assert(true == myRebuilder.Rebuild("LucileBedRoomTemperature"));
+#endif
+
 
     assert(true==backup.Open(filename_backup));
     assert(true==rebuild.Open(filename_rebuild));

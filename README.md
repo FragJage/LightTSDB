@@ -1,5 +1,6 @@
 [![Build Status](https://travis-ci.org/FragJage/LightTSDB.svg?branch=master)](https://travis-ci.org/FragJage/LightTSDB)
 [![Coverage Status](https://coveralls.io/repos/github/FragJage/LightTSDB/badge.svg?branch=master&bust=1)](https://coveralls.io/github/FragJage/LightTSDB?branch=master)
+[![Build status](https://ci.appveyor.com/api/projects/status/8dq5ss34d7w4xdcu?svg=true)](https://ci.appveyor.com/project/FragJage/lighttsdb)
 
 LightTSDB
 =========
@@ -9,19 +10,18 @@ Introduction
 ============
 This class store time series into the file system and can read float values by hours.
 
-Features  ... developpment in progress
+Features
 ========
  - Choice of the store folder
  - Indexed read
  - Supported type float, double, int, bool.
- - (TO DO) Compressed file
- - (TO DO) Compile on Linux and Windows, Intel or ARM.
+ - Compile on Linux and Windows, Intel or ARM.
 
 Portability
 ===========
 Unit tests passed successfully on :
  - Windows Seven (CPU Intel Celeron)
- - (TO DO) Linux Ubuntu (CPU Intel Atom)
+ - Linux Ubuntu (CPU Intel Atom)
  - (TO DO) Linux Raspian on Raspberry Pi (CPU ARM)
  - (TO DO) Linux FunPlug on NAS DNS-320 (CPU ARM)
 

@@ -37,13 +37,13 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">C:\Perso\Sources\LightTSDB\Win\server\bin\Debug\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">bin\Debug\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">LTSDBServer.dir\Debug\</IntDir>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">LTSDBServer</TargetName>
     <TargetExt Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">.exe</TargetExt>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</LinkIncremental>
     <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</GenerateManifest>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">C:\Perso\Sources\LightTSDB\Win\server\bin\Release\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">bin\Release\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">LTSDBServer.dir\Release\</IntDir>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">LTSDBServer</TargetName>
     <TargetExt Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">.exe</TargetExt>
@@ -69,10 +69,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;MG_ENABLE_CALLBACK_USERDATA;CMAKE_INTDIR=\"Debug\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Perso\Sources\LightTSDB\server\..\src;C:\Perso\Sources\LightTSDB\server\MongooseCpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\src;..\..\server\MongooseCpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\Perso\Sources\LightTSDB\server\..\src;C:\Perso\Sources\LightTSDB\server\MongooseCpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\src;..\..\server\MongooseCpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -85,8 +85,8 @@
       <AdditionalOptions>%(AdditionalOptions) /machine:X86</AdditionalOptions>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
-      <ImportLibrary>C:/Perso/Sources/LightTSDB/Win/server/bin/Debug/LTSDBServer.lib</ImportLibrary>
-      <ProgramDataBaseFile>C:/Perso/Sources/LightTSDB/Win/server/bin/Debug/LTSDBServer.pdb</ProgramDataBaseFile>
+      <ImportLibrary>bin/Debug/LTSDBServer.lib</ImportLibrary>
+      <ProgramDataBaseFile>bin/Debug/LTSDBServer.pdb</ProgramDataBaseFile>
       <SubSystem>Console</SubSystem>
       <Version>
       </Version>
@@ -114,10 +114,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;MG_ENABLE_CALLBACK_USERDATA;CMAKE_INTDIR=\"Release\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Perso\Sources\LightTSDB\server\..\src;C:\Perso\Sources\LightTSDB\server\MongooseCpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\src;..\..\server\MongooseCpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\Perso\Sources\LightTSDB\server\..\src;C:\Perso\Sources\LightTSDB\server\MongooseCpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\src;..\..\server\MongooseCpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -130,8 +130,8 @@
       <AdditionalOptions>%(AdditionalOptions) /machine:X86</AdditionalOptions>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
-      <ImportLibrary>C:/Perso/Sources/LightTSDB/Win/server/bin/Release/LTSDBServer.lib</ImportLibrary>
-      <ProgramDataBaseFile>C:/Perso/Sources/LightTSDB/Win/server/bin/Release/LTSDBServer.pdb</ProgramDataBaseFile>
+      <ImportLibrary>bin/Release/LTSDBServer.lib</ImportLibrary>
+      <ProgramDataBaseFile>bin/Release/LTSDBServer.pdb</ProgramDataBaseFile>
       <SubSystem>Console</SubSystem>
       <Version>
       </Version>
@@ -141,23 +141,23 @@
     </ProjectReference>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="C:\Perso\Sources\LightTSDB\src\LightTSDB.cpp" />
-    <ClInclude Include="C:\Perso\Sources\LightTSDB\src\LightTSDB.h" />
-    <ClCompile Include="C:\Perso\Sources\LightTSDB\server\mongoose\mongoose.c">
+    <ClCompile Include="..\..\src\LightTSDB.cpp" />
+    <ClInclude Include="..\..\src\LightTSDB.h" />
+    <ClCompile Include="..\..\server\mongoose\mongoose.c">
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsC</CompileAs>
     </ClCompile>
-    <ClInclude Include="C:\Perso\Sources\LightTSDB\server\mongoose\mongoose.h" />
-    <ClCompile Include="C:\Perso\Sources\LightTSDB\server\MongooseCpp\Request.cpp" />
-    <ClCompile Include="C:\Perso\Sources\LightTSDB\server\MongooseCpp\Response.cpp" />
-    <ClCompile Include="C:\Perso\Sources\LightTSDB\server\MongooseCpp\WebServer.cpp" />
-    <ClCompile Include="C:\Perso\Sources\LightTSDB\server\LastController.cpp" />
-    <ClCompile Include="C:\Perso\Sources\LightTSDB\server\LtsdbFactory.cpp" />
-    <ClCompile Include="C:\Perso\Sources\LightTSDB\server\ReadController.cpp" />
-    <ClCompile Include="C:\Perso\Sources\LightTSDB\server\TimeHelper.cpp" />
-    <ClCompile Include="C:\Perso\Sources\LightTSDB\server\WelcomeController.cpp" />
-    <ClCompile Include="C:\Perso\Sources\LightTSDB\server\WriteController.cpp" />
-    <ClCompile Include="C:\Perso\Sources\LightTSDB\server\main.cpp" />
+    <ClInclude Include="..\..\server\mongoose\mongoose.h" />
+    <ClCompile Include="..\..\server\MongooseCpp\Request.cpp" />
+    <ClCompile Include="..\..\server\MongooseCpp\Response.cpp" />
+    <ClCompile Include="..\..\server\MongooseCpp\WebServer.cpp" />
+    <ClCompile Include="..\..\server\LastController.cpp" />
+    <ClCompile Include="..\..\server\LtsdbFactory.cpp" />
+    <ClCompile Include="..\..\server\ReadController.cpp" />
+    <ClCompile Include="..\..\server\TimeHelper.cpp" />
+    <ClCompile Include="..\..\server\WelcomeController.cpp" />
+    <ClCompile Include="..\..\server\WriteController.cpp" />
+    <ClCompile Include="..\..\server\main.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

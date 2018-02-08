@@ -160,6 +160,7 @@ void CleanUp()
     myTSDB.Remove(SensorName);
 }
 
+
 int main()
 {
     cout << termcolor::lightYellow << "- Speed measurement ---------------" << endl;

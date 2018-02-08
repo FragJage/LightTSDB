@@ -258,7 +258,6 @@ bool TestLightTSDB::IndexSearch()
     MockAddSecond(3600);
     assert(true==myTSDB.WriteValue("Sensor2", 21.0f));
     assert(true==myTSDB.ReadValues("Sensor2", start+3600*4, values));
-cout << "2 : " << values.size() << endl;
 	assert(1==values.size());
     assert(21.5==values.begin()->value.Float);
 
@@ -336,9 +335,14 @@ bool TestLightTSDB::CheckDate()
     myError = myTSDB.GetLastError("CorruptDate");
     assert("OPEN_COR1"==myError.Code);
 
+    #ifdef _MSC_VER
+    assert(false==myTSDB.WriteValue("TooNewDateWin", 21.3f));
+    myError = myTSDB.GetLastError("TooNewDateWin");
+    #else
     assert(false==myTSDB.WriteValue("TooNewDate", 21.3f));
     myError = myTSDB.GetLastError("TooNewDate");
-    assert("OPEN_COR2"==myError.Code);
+    #endif
+	assert("OPEN_COR2"==myError.Code);
 
     return true;
 }

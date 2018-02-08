@@ -121,7 +121,8 @@ class LtsdbFile
         bool Is_Open();
         void Close();
         void Clear();
-        bool Seekg(std::streamoff off, std::ios_base::seekdir way);
+		bool Seekp(std::streamoff off, std::ios_base::seekdir way);
+		bool Seekg(std::streamoff off, std::ios_base::seekdir way);
         std::streampos Tellp();
         std::streampos Tellg();
         bool WriteStreamOffset(std::streampos pos);
