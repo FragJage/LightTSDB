@@ -11,4 +11,4 @@ build:
   project: builds\msvc\LightTSDB.sln
   
 after_build:
- - builds\msvc\bin\unittest.exe
+ - builds\msvc\bin\Release\unittest.exe
