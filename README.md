@@ -26,9 +26,33 @@ Unit tests passed successfully on :
  - (TO DO) Linux Raspian on Raspberry Pi (CPU ARM)
  - (TO DO) Linux FunPlug on NAS DNS-320 (CPU ARM)
 
-For more informations
-=====================
-(TO DO) See documentation in doc/html/index.html
+How to use
+==========
+ Add src into your project and see examples folder. For msvc add dependency/dirent folder.
+ 
+ To build, you can see CMakeLists.txt, Code::Blocks or MSVC projects in builds folder.
+ 
+ For example :
+    
+		int main()
+		{
+			LightTSDB::LightTSDB myTSDB;
+			LightTSDB::DataValue lastValue;
+		    list<LightTSDB::DataValue> myValues;
+
+
+			///*** Write float value
+			float temperature = 22.35f;
+			myTSDB.WriteValue("BedRoomTemperature", temperature);
+			
+			///*** Read last float value
+			myTSDB.ReadLastValue("BedRoomTemperature", lastValue);
+
+			///*** Read values for hour
+			myTSDB.ReadValues("BedRoomTemperature", time(), myValues);
+			
+			return 0;
+		}
 
 Licence
 =======
