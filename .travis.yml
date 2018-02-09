@@ -6,7 +6,7 @@ env:
     - COMPILER=g++-4.9
     # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
     #   via the "travis encrypt" command using the project repo's public key
-    - secure: ""
+    - secure: "BN1ZktyA9k6bGSid9vuzn6r9pVmjvZ1+EjSYGl8r5sxsBC82G63H9Atp5ft7LczBVo+dOxT1FHOxeR4/wPX2ELmKnLpCJXX5GXIRSlffj8idE+7AQdQeauQbRgJWEXrGUdwqFUI7B9FHRI/++/aN/JZZ2J81LgUfeqmUbJvzxvE="
 
 addons:
   apt:
@@ -23,6 +23,7 @@ addons:
     
 install:
   - pip install --user git+git://github.com/eddyxu/cpp-coveralls.git
+  - echo -n | openssl s_client -connect scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
 
 script:
   - if [ "$COVERITY_SCAN_BRANCH" != 1 ]; then cmake . -G"Unix Makefiles" -DCMAKE_CXX_COMPILER=$(which $COMPILER); fi

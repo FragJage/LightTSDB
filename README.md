@@ -1,6 +1,7 @@
 [![Build Status](https://travis-ci.org/FragJage/LightTSDB.svg?branch=master)](https://travis-ci.org/FragJage/LightTSDB)
 [![Coverage Status](https://coveralls.io/repos/github/FragJage/LightTSDB/badge.svg?branch=master&bust=1)](https://coveralls.io/github/FragJage/LightTSDB?branch=master)
 [![Build status](https://ci.appveyor.com/api/projects/status/8dq5ss34d7w4xdcu?svg=true)](https://ci.appveyor.com/project/FragJage/lighttsdb)
+[![Coverity Scan Build](https://scan.coverity.com/projects/15093/badge.svg)](https://scan.coverity.com/projects/fragjage-lighttsdb)
 
 LightTSDB
 =========
