@@ -14,18 +14,11 @@ using namespace std;
 
 //TO DO List
 //Use state flag
-//Mutex protection for writing (and reading ?)
-//  #include <mutex>
-//  #include <thread>
-//  std::mutex m;
-//  std::lock_guard<std::mutex> lock(m);
-//Mutex for maps access
 //Tool for check data file
 //Tool for repair data file
 
-/// Intel Core i7 - SSD - MSVC  : 0.266 - 0.185 - 0.346
-/// Intel Core i7 - SSD - Mingw : 0.469 - 0.266 - 0.359
-/// Celeron G540  - SSD - GCC   : 0.272 - 0.179 - 0.292
+/// Intel Core i7 - SSD - MSVC  : 0.332 - 0.198 - 0.382
+/// Intel Core i7 - SSD - Mingw : 1.647 - 0.271 - 0.515
 
 vector<int> RandomIntervalTime;
 vector<time_t> RandomValuesTime;
@@ -160,7 +153,6 @@ void CleanUp()
     myTSDB.Remove(SensorName);
 }
 
-
 int main()
 {
     cout << termcolor::lightYellow << "- Speed measurement ---------------" << endl;
@@ -191,5 +183,5 @@ int main()
     if(ret!=-1)
         if(!unitTest.run()) ret = 1;
 
-    return ret;
+	return ret;
 }

@@ -45,10 +45,11 @@ LightTSDB::LightTSDB()
 
 LightTSDB::~LightTSDB()
 {
+    lock_guard<mutex> lock(m_FilesMap);
     map<string,FilesInfo>::iterator it = m_FilesInfo.begin();
     while(it!=m_FilesInfo.end())
     {
-        cleanUp(&(it->second));
+        cleanUp(it->second);
         ++it;
     }
 }
@@ -193,6 +194,8 @@ bool LightTSDB::internalWriteTimeValue(const std::string& sensor, void* pValue, 
 
 bool LightTSDB::writeTimeValue(FilesInfo* filesInfo, void* pValue, time_t timestamp)
 {
+    lock_guard<mutex> lock(filesInfo->writeMutex);
+
     if(difftime(timestamp, filesInfo->startHour)>3599)
     {
         if(filesInfo->startHour>0) filesInfo->data->WriteEndLine();
@@ -220,6 +223,7 @@ bool LightTSDB::ReadValues(const std::string& sensor, time_t hour, std::list<Dat
     FilesInfo* filesInfo = getFilesInfo(sensor, FileDataType::Undefined);
     if(filesInfo == nullptr) return false;
 
+    lock_guard<mutex> lock(filesInfo->readMutex);
     HourlyTimestamp_t hourlyTimestamp = HourlyTimestamp::FromTimeT(hour);
     values.clear();
     streampos pos = findIndex(filesInfo, hourlyTimestamp);
@@ -247,6 +251,7 @@ bool LightTSDB::ReadValues(const string& sensor, time_t timeBegin, time_t timeEn
     FilesInfo* filesInfo = getFilesInfo(sensor, FileDataType::Undefined);
     if(filesInfo == nullptr) return false;
 
+    lock_guard<mutex> lock(filesInfo->readMutex);
     HourlyTimestamp_t hourlyTimestamp = HourlyTimestamp::FromTimeT(timeBegin);
     values.clear();
     streampos pos = findIndex(filesInfo, hourlyTimestamp);
@@ -283,6 +288,7 @@ bool LightTSDB::ReadLastValue(const string& sensor, DataValue& dataValue)
     FilesInfo* filesInfo = getFilesInfo(sensor, FileDataType::Undefined);
     if(filesInfo == nullptr) return false;
 
+    lock_guard<mutex> lock(filesInfo->readMutex);
     streampos pos = findIndex(filesInfo, filesInfo->maxHour);
     if(pos==(streampos)0) return true;
     filesInfo->data->Seekg(pos, std::ios::beg);
@@ -323,10 +329,11 @@ bool LightTSDB::ResampleValues(const string& sensor, time_t timeBegin, time_t ti
 
 bool LightTSDB::Close(const std::string& sensor)
 {
+    lock_guard<mutex> lock(m_FilesMap);
     map<string,FilesInfo>::iterator it = m_FilesInfo.find(sensor);
     if(it == m_FilesInfo.end()) return false;
 
-    cleanUp(&(it->second));
+    cleanUp(it->second);
     m_FilesInfo.erase(it);
     return true;
 }
@@ -352,16 +359,19 @@ bool LightTSDB::Remove(const std::string& sensor)
 
 LightTSDB::FilesInfo* LightTSDB::getFilesInfo(const string& sensor, FileDataType valueType)
 {
+    lock_guard<mutex> lock(m_FilesMap);
     map<string,FilesInfo>::iterator it = m_FilesInfo.find(sensor);
     if(it == m_FilesInfo.end())
     {
-        FilesInfo filesInfo(sensor);
+        m_FilesInfo.emplace(std::piecewise_construct, std::forward_as_tuple(sensor), std::forward_as_tuple(sensor));
+        it = m_FilesInfo.find(sensor);
 
         if(LtsdbFile::FileExists(getFileName(sensor, data)))
         {
-            if(!openFiles(filesInfo))
+            if(!openFiles(it->second))
             {
-                cleanUp(&filesInfo);
+                cleanUp(it->second);
+                m_FilesInfo.erase(it);
                 return nullptr;
             }
         }
@@ -369,19 +379,18 @@ LightTSDB::FilesInfo* LightTSDB::getFilesInfo(const string& sensor, FileDataType
         {
             if(valueType==FileDataType::Undefined)
             {
-                setLastError(filesInfo.sensor, "NOFILE", "Data file not found.");
-                cleanUp(&filesInfo);
+                setLastError(it->second.sensor, "NOFILE", "Data file not found.");
+                cleanUp(it->second);
+                m_FilesInfo.erase(it);
                 return nullptr;
             }
-            if(!createFiles(filesInfo, valueType))
+            if(!createFiles(it->second, valueType))
             {
-                cleanUp(&filesInfo);
+                cleanUp(it->second);
+                m_FilesInfo.erase(it);
                 return nullptr;
             }
         }
-
-        m_FilesInfo[sensor] = filesInfo;
-        it = m_FilesInfo.find(sensor);
     }
 
     if(((valueType!=FileDataType::Undefined))&&(it->second.type!=valueType))
@@ -506,7 +515,7 @@ bool LightTSDB::openIndexFile(FilesInfo& filesInfo)
     return true;
 }
 
-bool LightTSDB::createFiles(LightTSDB::FilesInfo& filesInfo, FileDataType valueType)
+bool LightTSDB::createFiles(FilesInfo& filesInfo, FileDataType valueType)
 {
     filesInfo.data = new LtsdbFile();
     if(!filesInfo.data->Open(getFileName(filesInfo.sensor, data)))
@@ -539,18 +548,17 @@ bool LightTSDB::createFiles(LightTSDB::FilesInfo& filesInfo, FileDataType valueT
     return true;
 }
 
-void LightTSDB::cleanUp(FilesInfo* pFilesInfo)
+void LightTSDB::cleanUp(FilesInfo& pFilesInfo)
 {
-    if(!pFilesInfo) return;
-    if(pFilesInfo->data)
+    if(pFilesInfo.data)
     {
-        pFilesInfo->data->Close();
-        delete(pFilesInfo->data);
+        pFilesInfo.data->Close();
+        delete(pFilesInfo.data);
     }
-    if(pFilesInfo->index)
+    if(pFilesInfo.index)
     {
-        pFilesInfo->index->Close();
-        delete(pFilesInfo->index);
+        pFilesInfo.index->Close();
+        delete(pFilesInfo.index);
     }
 }
 
@@ -657,6 +665,7 @@ void LightTSDB::setLastError(const string& sensor, const string& code, const str
     errorInfo.ErrMessage = errMessage;
     errorInfo.SysMessage = sysMessage;
 
+    lock_guard<mutex> lock(m_ErrorMap);
     m_LastError[sensor] = errorInfo;
 }
 
@@ -664,6 +673,7 @@ ErrorInfo LightTSDB::GetLastError(const string& sensor)
 {
     ErrorInfo emptyInfo;
 
+    lock_guard<mutex> lock(m_ErrorMap);
     map<string, ErrorInfo>::const_iterator it = m_LastError.find(sensor);
     if(it==m_LastError.end()) return emptyInfo;
     return it->second;

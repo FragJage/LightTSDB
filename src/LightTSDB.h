@@ -74,6 +74,7 @@
 #include <vector>
 #include <ctime>
 #include <fstream>
+#include <mutex>
 
 namespace LightTSDB {
 
@@ -264,11 +265,13 @@ class LightTSDB
             FileDataType type;
             uint8_t options;
             int valueSize;
+            std::mutex readMutex;
+            std::mutex writeMutex;
         };
 
         FilesInfo* getFilesInfo(const std::string& sensor, FileDataType valueType);
         std::string getFileExt(const FileType fileType);
-        void cleanUp(FilesInfo* pFileInfo);
+        void cleanUp(FilesInfo& pFileInfo);
 
         bool openFiles(FilesInfo& filesInfo);
         bool openDataFile(FilesInfo& filesInfo);
@@ -291,6 +294,8 @@ class LightTSDB
         std::string m_Folder;
         std::map<std::string, ErrorInfo> m_LastError;
         std::map<std::string, FilesInfo> m_FilesInfo;
+        std::mutex m_FilesMap;
+        std::mutex m_ErrorMap;
 };
 
 class HourlyTimestamp
