@@ -110,9 +110,6 @@ static const std::string LTSDB_SIGNATURE = "LTSDB";
 static const uint8_t LTSDB_VERSION = 1;
 static const uint16_t LTSDB_ENDLINE = 0XFFFE;
 
-static const int INDEX_STEP = sizeof(HourlyTimestamp_t)+sizeof(std::streampos);
-static const int HEADER_SIZE = LTSDB_SIGNATURE.size()+sizeof(LTSDB_VERSION)+sizeof(FileDataType)+sizeof(uint8_t)+sizeof(FileState);
-
 class LtsdbFile
 {
     public:

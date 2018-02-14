@@ -32,6 +32,9 @@ using namespace std;
 
 namespace LightTSDB {
 
+static const int INDEX_STEP = sizeof(HourlyTimestamp_t)+sizeof(std::streampos);
+static const int HEADER_SIZE = LTSDB_SIGNATURE.size()+sizeof(LTSDB_VERSION)+sizeof(FileDataType)+sizeof(uint8_t)+sizeof(FileState);
+
 /**************************************************************************************************************/
 /***                                                                                                        ***/
 /*** Class LightTSDB                                                                                        ***/
@@ -651,8 +654,8 @@ string LightTSDB::getSystemErrorMsg(int errorNumber)
         char errorMsg[256];
         strerror_s(errorMsg, 256, errorNumber);
     #else
-        char errorMsg[256];
-        strerror_r(errorNumber, errorMsg, 256);
+        char bufferMsg[256];
+        char const* errorMsg = strerror_r(errorNumber, bufferMsg, 256);
     #endif
 	return string(errorMsg);
 }
