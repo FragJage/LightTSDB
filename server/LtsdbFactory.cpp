@@ -11,9 +11,8 @@ LightTSDB::LightTSDB& LtsdbFactory::GetInstance(string folder)
 
     if(g_LtsdbMap.find(folder) == g_LtsdbMap.end())
     {
-        LightTSDB::LightTSDB myTSDB;
-        myTSDB.SetFolder("./"+folder);
-        g_LtsdbMap[folder] = myTSDB;
+		g_LtsdbMap.emplace(std::piecewise_construct, std::forward_as_tuple(folder), std::forward_as_tuple());
+		g_LtsdbMap[folder].SetFolder("./" + folder);
     }
 
     g_MapMutex.unlock();

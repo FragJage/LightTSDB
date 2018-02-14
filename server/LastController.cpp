@@ -21,10 +21,9 @@ bool LastController::Process(Request& request, Response& response)
     string folder = request.GetParameter("BaseName");
     string sensor = request.GetParameter("SensorId");
 
-    LightTSDB::LightTSDB myTSDB = LtsdbFactory::GetInstance(folder);
     LightTSDB::DataValue data;
 
-    if(myTSDB.ReadLastValue(sensor, data))
+    if(LtsdbFactory::GetInstance(folder).ReadLastValue(sensor, data))
     {
         ostringstream ss;
         ss << TimeHelper::ToString(data.time) << " : " << data.value.Float << endl;
@@ -33,7 +32,7 @@ bool LastController::Process(Request& request, Response& response)
     }
     else
     {
-        LightTSDB::ErrorInfo myError = myTSDB.GetLastError(sensor);
+        LightTSDB::ErrorInfo myError = LtsdbFactory::GetInstance(folder).GetLastError(sensor);
         response.SetStatut(404);
         response.SetContent(myError.ErrMessage+" "+myError.SysMessage);
     }

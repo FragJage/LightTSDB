@@ -25,7 +25,6 @@ bool ReadController::Process(Request& request, Response& response)
     string strStart = request.GetQueryParameter("Start");
     string strEnd = request.GetQueryParameter("End");
     string strInt = request.GetQueryParameter("Interval");
-    LightTSDB::LightTSDB myTSDB = LtsdbFactory::GetInstance(folder);
 
     bool ok = false;
     time_t tStart;
@@ -43,16 +42,16 @@ bool ReadController::Process(Request& request, Response& response)
     if(strEnd!="") tEnd = TimeHelper::ToTime(strEnd);
 
     if(tEnd==0)
-        ok = myTSDB.ReadValues(sensor, tStart, datas);
+        ok = LtsdbFactory::GetInstance(folder).ReadValues(sensor, tStart, datas);
     else if(interval > 0)
-        ok = myTSDB.ResampleValues(sensor, tStart, tEnd, datas, interval);
+        ok = LtsdbFactory::GetInstance(folder).ResampleValues(sensor, tStart, tEnd, datas, interval);
     else
-        ok = myTSDB.ReadValues(sensor, tStart, tEnd, datas);
+        ok = LtsdbFactory::GetInstance(folder).ReadValues(sensor, tStart, tEnd, datas);
 
 
     if(!ok)
     {
-        LightTSDB::ErrorInfo myError = myTSDB.GetLastError(sensor);
+        LightTSDB::ErrorInfo myError = LtsdbFactory::GetInstance(folder).GetLastError(sensor);
         response.SetStatut(404);
         response.SetContent(myError.ErrMessage+" "+myError.SysMessage);
         return true;
@@ -76,10 +75,9 @@ bool ReadController::Process(Request& request, Response& response)
 
 bool ReadController::SensorsList(string folder, Response& response)
 {
-    LightTSDB::LightTSDB myTSDB = LtsdbFactory::GetInstance(folder);
     list<string> sensorList;
 
-    if(myTSDB.GetSensorList(sensorList))
+    if(LtsdbFactory::GetInstance(folder).GetSensorList(sensorList))
     {
         list<string>::const_iterator it = sensorList.begin();
         list<string>::const_iterator itEnd = sensorList.end();
