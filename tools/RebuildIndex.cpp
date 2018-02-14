@@ -144,9 +144,9 @@ bool RebuildIndex::buildBody()
 
         while(m_Data.ReadValue(&offset, &value, m_ValueSize))
         {
-            if(offset==ENDLINE) break;
+            if(offset==LTSDB_ENDLINE) break;
         }
-    } while(offset==ENDLINE);
+    } while(offset==LTSDB_ENDLINE);
     return true;
 }
 

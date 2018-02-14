@@ -237,11 +237,11 @@ bool LightTSDB::ReadValues(const std::string& sensor, time_t hour, std::list<Dat
     UValue uvalue;
     while(filesInfo->data->ReadValue(&offset, &uvalue, filesInfo->valueSize))
     {
-        if(offset==ENDLINE) break;
+        if(offset==LTSDB_ENDLINE) break;
         values.emplace_back(HourlyTimestamp::ToTimeT(dataTimestamp, offset), uvalue);
     }
 
-    if(offset!=ENDLINE) filesInfo->data->Clear();;
+    if(offset!=LTSDB_ENDLINE) filesInfo->data->Clear();;
 
     return true;
 }
@@ -266,7 +266,7 @@ bool LightTSDB::ReadValues(const string& sensor, time_t timeBegin, time_t timeEn
     time_t ts;
     while(filesInfo->data->ReadValue(&offset, &uvalue, filesInfo->valueSize))
     {
-        if(offset==ENDLINE)
+        if(offset==LTSDB_ENDLINE)
         {
             dataTimestamp = filesInfo->data->ReadHourlyTimestamp();
         }
@@ -278,7 +278,7 @@ bool LightTSDB::ReadValues(const string& sensor, time_t timeBegin, time_t timeEn
         }
     }
 
-    if(offset!=ENDLINE) filesInfo->data->Clear();;
+    if(offset!=LTSDB_ENDLINE) filesInfo->data->Clear();;
 
     return true;
 }
@@ -523,7 +523,7 @@ bool LightTSDB::createFiles(FilesInfo& filesInfo, FileDataType valueType)
         setLastError(filesInfo.sensor, "CREATE_DAT1", "Unable to create data file.", getSystemErrorMsg(errno));
         return false;
     }
-    if(!filesInfo.data->WriteHeader(SIGNATURE, VERSION, valueType, 0, FileState::Stable))
+    if(!filesInfo.data->WriteHeader(LTSDB_SIGNATURE, LTSDB_VERSION, valueType, 0, FileState::Stable))
     {
 		setLastError(filesInfo.sensor, "CREATE_DAT2", "Unable to write header of data file.", getSystemErrorMsg(errno));
         return false;
@@ -535,7 +535,7 @@ bool LightTSDB::createFiles(FilesInfo& filesInfo, FileDataType valueType)
 		setLastError(filesInfo.sensor, "CREATE_NDX1", "Unable to create index file.", getSystemErrorMsg(errno));
         return false;
     }
-    if(!filesInfo.index->WriteHeader(SIGNATURE, VERSION, valueType, 0, FileState::Stable))
+    if(!filesInfo.index->WriteHeader(LTSDB_SIGNATURE, LTSDB_VERSION, valueType, 0, FileState::Stable))
     {
 		setLastError(filesInfo.sensor, "CREATE_NDX2", "Unable to write header of index file.", getSystemErrorMsg(errno));
         return false;
@@ -572,7 +572,7 @@ bool LightTSDB::checkHeader(const std::string& sensor, const std::string& signat
 
 bool LightTSDB::checkSignature(const std::string& sensor, const std::string& signature, FileType fileType)
 {
-    if(signature==SIGNATURE) return true;
+    if(signature==LTSDB_SIGNATURE) return true;
 
     string file = getFileExt(fileType);
     if(file=="") file = "unknown";
@@ -582,7 +582,7 @@ bool LightTSDB::checkSignature(const std::string& sensor, const std::string& sig
 
 bool LightTSDB::checkVersion(const std::string& sensor, uint8_t version, FileType fileType)
 {
-    if(version==VERSION) return true;
+    if(version==LTSDB_VERSION) return true;
 
     string file = getFileExt(fileType);
     if(file=="") file = "unknown";
@@ -754,7 +754,7 @@ int HourlyTimestamp::VerifyDataHourlyTimestamp(HourlyTimestamp_t hourIndex, stre
 
     while(data->ReadValue(&offset, &uvalue, valueSize)==true)
     {
-        if(offset==ENDLINE) break;
+        if(offset==LTSDB_ENDLINE) break;
         offsetMax = offset;
     }
 
@@ -948,7 +948,7 @@ bool LtsdbFile::ReadValue(HourlyOffset_t* offset, void* pValue, int valueSize)
 {
     *offset = 0;
     m_InternalFile.read(reinterpret_cast<char *>(offset), sizeof(HourlyOffset_t));
-    if(*offset==ENDLINE) return true;
+    if(*offset==LTSDB_ENDLINE) return true;
     m_InternalFile.read(reinterpret_cast<char *>(pValue), valueSize);
     return m_InternalFile.good();
 }
@@ -962,13 +962,13 @@ bool LtsdbFile::WriteValue(HourlyOffset_t offset, void* pValue, int valueSize)
 
 bool LtsdbFile::WriteEndLine()
 {
-    m_InternalFile.write(reinterpret_cast<const char *>(&ENDLINE), sizeof(ENDLINE));
+    m_InternalFile.write(reinterpret_cast<const char *>(&LTSDB_ENDLINE), sizeof(LTSDB_ENDLINE));
     return m_InternalFile.good();
 }
 
 bool LtsdbFile::ReadHeader(std::string* signature, uint8_t* version, FileDataType* type, uint8_t* options, FileState* state)
 {
-    int sigSize = SIGNATURE.size();
+    int sigSize = LTSDB_SIGNATURE.size();
 
 	char* charsig = new char[sigSize + 1];
     *charsig = '\0';

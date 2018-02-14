@@ -87,7 +87,7 @@ bool TestLtsdbFile::RWValue()
     assert(writeHo==readHo);
     assert(writeValue==readValue.Float);
     assert(true==myFile.ReadValue(&readHo, &readValue, sizeof(float)));
-    assert(LightTSDB::ENDLINE==readHo);
+    assert(LightTSDB::LTSDB_ENDLINE==readHo);
     myFile.Close();
     assert(0==remove("./testRWValue.dat"));
 
@@ -105,11 +105,11 @@ bool TestLtsdbFile::RWHeader()
 
 
     assert(true==myFile.Open("./testRWHeader.dat"));
-    assert(true==myFile.WriteHeader(LightTSDB::SIGNATURE, LightTSDB::VERSION, LightTSDB::FileDataType::Float, 0, LightTSDB::FileState::Stable));
+    assert(true==myFile.WriteHeader(LightTSDB::LTSDB_SIGNATURE, LightTSDB::LTSDB_VERSION, LightTSDB::FileDataType::Float, 0, LightTSDB::FileState::Stable));
     myFile.Seekg(0, std::ios::beg);
     assert(true==myFile.ReadHeader(&signature, &version, &fileDataType, &options, &fileState));
-    assert(LightTSDB::SIGNATURE==signature);
-    assert(LightTSDB::VERSION==version);
+    assert(LightTSDB::LTSDB_SIGNATURE==signature);
+    assert(LightTSDB::LTSDB_VERSION==version);
     assert(LightTSDB::FileDataType::Float==fileDataType);
     assert(0==options);
     assert(LightTSDB::FileState::Stable==fileState);
