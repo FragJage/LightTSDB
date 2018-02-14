@@ -17,9 +17,12 @@ using namespace std;
 //Tool for check data file
 //Tool for repair data file
 
-/// Intel Core i7 - SSD - MSVC  : 0.332 - 0.198 - 0.382
-/// Intel Core i7 - SSD - Mingw : 1.647 - 0.271 - 0.515
+///                                  write   read    random read
+/// Intel Core i7 - SSD - MSVC     : 0.332 - 0.198 - 0.382
+/// Intel Core i7 - SSD - Mingw    : 1.647 - 0.271 - 0.515
 /// Intel Celeron G540 - SSD - GCC : 0.179 - 0.167 - 0.296
+/// AppVeyor Plateform             : 0.390 - 0.245 - 0.459
+/// Travis Platform                : 0.286 - 0.165 - 0.230
 
 vector<int> RandomIntervalTime;
 vector<time_t> RandomValuesTime;
