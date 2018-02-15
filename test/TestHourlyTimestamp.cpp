@@ -1,4 +1,5 @@
 #include <sstream>
+#include <cstring>  //For memset
 #include "TestHourlyTimestamp.h"
 
 using namespace std;
