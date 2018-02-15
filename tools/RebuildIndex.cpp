@@ -6,7 +6,7 @@ using namespace std;
 
 namespace LightTSDB {
 
-RebuildIndex::RebuildIndex()
+RebuildIndex::RebuildIndex() : m_ValueSize(0)
 {
 }
 

@@ -54,6 +54,7 @@ bool TestHourlyTimestamp::ToString()
     struct tm stime;
     ostringstream oss;
 
+    memset(&stime, 0, sizeof(tm));
 	#ifdef _MSC_VER
 		localtime_s(&stime, &ttime);
 	#else

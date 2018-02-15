@@ -65,7 +65,7 @@ bool ReadController::Process(Request& request, Response& response)
     while(it!=itEnd)
     {
         ss << TimeHelper::ToString(it->time) << " : " << it->value.Float << endl;
-        it++;
+        ++it;
     }
     response.SetStatut(200);
     response.SetContent(ss.str());

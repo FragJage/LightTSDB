@@ -14,6 +14,7 @@ TestTools::~TestTools()
 
 bool TestTools::RebuildIndex()
 {
+    bool result;
     LightTSDB::RebuildIndex myRebuilder;
     LightTSDB::LtsdbFile backup;
     LightTSDB::LtsdbFile rebuild;
@@ -37,9 +38,11 @@ bool TestTools::RebuildIndex()
 
     myRebuilder.SetFolder("test/data");
 #ifdef _MSC_VER
-	assert(true == myRebuilder.Rebuild("LucileBedRoomTemperatureWin"));
+    result = myRebuilder.Rebuild("LucileBedRoomTemperatureWin");
+	assert(true == result);
 #else
-	assert(true == myRebuilder.Rebuild("LucileBedRoomTemperature"));
+    result = myRebuilder.Rebuild("LucileBedRoomTemperature");
+	assert(true == result);
 #endif
 
 

@@ -1,4 +1,5 @@
 #include <sstream>
+#include <cstring> //for memset
 #include "TimeHelper.h"
 
 using namespace std;
@@ -13,7 +14,7 @@ string TimeHelper::ToString(time_t tTime)
 	#else
 		localtime_r(&tTime, &sTime);
 	#endif
-	
+
 	strftime(buf, 32, "%Y-%m-%dT%H:%M:%S", &sTime);
     return string(buf);
 }
@@ -21,6 +22,8 @@ string TimeHelper::ToString(time_t tTime)
 time_t TimeHelper::ToTime(string strTime)
 {
     struct tm t;
+
+    memset(&t, 0, sizeof(tm));
     #ifdef WIN32
     istringstream istr(strTime);
     istr >> t.tm_year;

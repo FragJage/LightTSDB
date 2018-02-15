@@ -3,7 +3,7 @@
 
 using namespace std;
 
-TestLightTSDB::TestLightTSDB() : TestClass("LightTSDB", this)
+TestLightTSDB::TestLightTSDB() : TestClass("LightTSDB", this), m_start1(0), m_start2(0)
 {
 	addTest("CreateDB", &TestLightTSDB::CreateDB);
 	addTest("OpenDB", &TestLightTSDB::OpenDB);
@@ -61,8 +61,8 @@ bool TestLightTSDB::CreateDB()
     while(it!=itEnd)
     {
         assert(20+i*0.5==it->value.Float);
-        it++;
-        i++;
+        ++it;
+        ++i;
     }
 
     return true;

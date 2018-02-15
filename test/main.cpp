@@ -116,14 +116,14 @@ void MeasureRandomReading()
     list<LightTSDB::DataValue> readValues;
     vector<int>::const_iterator it, itEnd;
     chrono::duration<float> fs(0);
-    int i, nbok=0;
+    int nbok=0;
 
     it = RandomOffset.begin();
     itEnd = RandomOffset.end();
     while(it!=itEnd)
     {
         auto t0 = chrono::high_resolution_clock::now();
-        i = *it;
+        int i = *it;
         if(!myTSDB.ReadValues(SensorName, RandomValuesTime[i], RandomValuesTime[i+RandomReadSize-1], readValues))
         {
             cout << termcolor::lightRed << "RandomReading failed : " << myTSDB.GetLastError(SensorName).ErrMessage << endl;

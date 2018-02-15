@@ -8,6 +8,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include <cstring>  //For memset
 #include "LightTSDB.h"
 
 using namespace std;
@@ -23,6 +24,7 @@ int main()
 
     myTSDB.SetFolder("test/data");
 
+    memset(&tmtime, 0, sizeof(tm));
 	#ifdef _MSC_VER
 		localtime_s(&tmtime, &start);
 	#else

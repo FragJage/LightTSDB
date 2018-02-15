@@ -3,7 +3,7 @@
 
 using namespace std;
 
-TestOtherTypes::TestOtherTypes() : TestClass("OtherTypes", this)
+TestOtherTypes::TestOtherTypes() : TestClass("OtherTypes", this), m_LastTime(0)
 {
 	addTest("WriteBool", &TestOtherTypes::WriteBool);
 	addTest("ReadBool", &TestOtherTypes::ReadBool);

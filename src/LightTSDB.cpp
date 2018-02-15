@@ -41,9 +41,8 @@ static const int HEADER_SIZE = LTSDB_SIGNATURE.size()+sizeof(LTSDB_VERSION)+size
 /***                                                                                                        ***/
 /**************************************************************************************************************/
 
-LightTSDB::LightTSDB()
+LightTSDB::LightTSDB() : m_Folder(".")
 {
-    m_Folder = ".";
 }
 
 LightTSDB::~LightTSDB()
@@ -458,7 +457,7 @@ bool LightTSDB::openDataFile(FilesInfo& filesInfo)
         setLastError(filesInfo.sensor, "OPEN_DAT1", "Unable to open data file.", getSystemErrorMsg(errno));
         return false;
     }
-    filesInfo.data->Seekg(0, std::ios::beg);
+    filesInfo.data->Seekg(0, ios::beg);
     if(!filesInfo.data->ReadHeader(&signature, &(filesInfo.version), &(filesInfo.type), &(filesInfo.options), &fileState))
     {
         setLastError(filesInfo.sensor, "OPEN_DAT2", "Unable to read header of data file.", getSystemErrorMsg(errno));
@@ -466,13 +465,14 @@ bool LightTSDB::openDataFile(FilesInfo& filesInfo)
     }
     filesInfo.valueSize = getValueSize(filesInfo.type);
     if(!checkHeader(filesInfo.sensor, signature, filesInfo.version, fileState, FileType::data)) return false;
-    filesInfo.data->Seekg(0, std::ios::end);
+    filesInfo.data->Seekg(0, ios::end);
     pos = filesInfo.data->Tellg();
     pos -= (sizeof(float)+sizeof(HourlyOffset_t));
+    filesInfo.data->Seekg(pos, ios::beg);
     filesInfo.data->ReadValue(&offset, &uvalue, filesInfo.valueSize);
     filesInfo.maxOffset = offset;
     filesInfo.data->Clear();
-    filesInfo.data->Seekg(0, std::ios::end);
+    filesInfo.data->Seekg(0, ios::end);
     return true;
 }
 
@@ -491,7 +491,7 @@ bool LightTSDB::openIndexFile(FilesInfo& filesInfo)
         setLastError(filesInfo.sensor, "OPEN_NDX1", "Unable to open index file.", getSystemErrorMsg(errno));
         return false;
     }
-    filesInfo.index->Seekg(0, std::ios::beg);
+    filesInfo.index->Seekg(0, ios::beg);
     if(!filesInfo.index->ReadHeader(&signature, &version, &dataType, &options, &fileState))
     {
         setLastError(filesInfo.sensor, "OPEN_NDX2", "Unable to read header of index file.", getSystemErrorMsg(errno));
@@ -506,15 +506,15 @@ bool LightTSDB::openIndexFile(FilesInfo& filesInfo)
     }
 
     filesInfo.minHour = filesInfo.index->ReadHourlyTimestamp();
-    filesInfo.index->Seekg(0, std::ios::end);
+    filesInfo.index->Seekg(0, ios::end);
     pos = filesInfo.index->Tellg();
     filesInfo.indexSize = pos;
     filesInfo.indexSize -= HEADER_SIZE;
     pos -= INDEX_STEP;
-    filesInfo.index->Seekg(pos, std::ios::beg);
+    filesInfo.index->Seekg(pos, ios::beg);
     filesInfo.maxHour = filesInfo.index->ReadHourlyTimestamp();
 
-    filesInfo.index->Seekg(0, std::ios::end);
+    filesInfo.index->Seekg(0, ios::end);
     return true;
 }
 
@@ -775,6 +775,7 @@ std::string HourlyTimestamp::ToString(HourlyTimestamp_t hourlyTimestamp)
     struct tm stime;
     ostringstream oss;
 
+    memset(&stime, 0, sizeof(tm));
 	#ifdef _MSC_VER
 		localtime_s(&stime, &ttime);
 	#else
@@ -820,7 +821,7 @@ void ResamplingHelper::Average(time_t timeBegin, const list<DataValue>& values, 
             maxValue = max(maxValue, lastValue);
             minValue = min(minValue, lastValue);
             found = true;
-            it++;
+            ++it;
         }
         if((found)&&((it->time>=tEnd)||(it==itEnd)))
         {
@@ -978,7 +979,7 @@ bool LtsdbFile::ReadHeader(std::string* signature, uint8_t* version, FileDataTyp
     m_InternalFile.read(charsig, sigSize);
     charsig[sigSize] = 0;
     *signature = charsig;
-	delete charsig;
+	delete[] charsig;
 
     m_InternalFile.read(reinterpret_cast<char *>(version), sizeof(uint8_t));
     m_InternalFile.read(reinterpret_cast<char *>(type), sizeof(uint8_t));
