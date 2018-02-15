@@ -1,6 +1,7 @@
 [![Build Status](https://travis-ci.org/FragJage/LightTSDB.svg?branch=master)](https://travis-ci.org/FragJage/LightTSDB)
-[![Coverage Status](https://coveralls.io/repos/github/FragJage/LightTSDB/badge.svg?branch=master&bust=1)](https://coveralls.io/github/FragJage/LightTSDB?branch=master)
 [![Build status](https://ci.appveyor.com/api/projects/status/8dq5ss34d7w4xdcu?svg=true)](https://ci.appveyor.com/project/FragJage/lighttsdb)
+[![Coverage Status](https://coveralls.io/repos/github/FragJage/LightTSDB/badge.svg?branch=master&bust=1)](https://coveralls.io/github/FragJage/LightTSDB?branch=master)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/6a37708054fd4386a781767cf71166fc)](https://www.codacy.com/app/FragJage/LightTSDB?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=FragJage/LightTSDB&amp;utm_campaign=Badge_Grade)
 
 LightTSDB
 =========
