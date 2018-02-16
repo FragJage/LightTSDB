@@ -97,8 +97,8 @@ bool TestLightTSDB::OpenDB()
     while(it!=itEnd)
     {
         assert(25-i*0.5==it->value.Float);
-        it++;
-        i++;
+        ++it;
+        ++i;
     }
 
     return true;
@@ -174,8 +174,8 @@ bool TestLightTSDB::ReadWithLimits()
             temp += 0.5;
 
         assert(temp==it->value.Float);
-        it++;
-        i++;
+        ++it;
+        ++i;
     }
     return true;
 }
@@ -199,7 +199,7 @@ bool TestLightTSDB::ReadWithResample()
     {
         minVal = min(minVal, it->value.Float);
         maxVal = max(maxVal, it->value.Float);
-        it++;
+        ++it;
     }
 
     assert(24==values.size());
