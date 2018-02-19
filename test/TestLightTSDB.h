@@ -21,6 +21,7 @@ public:
     bool Close();
     bool IndexSearch();
     bool GetSensorList();
+    bool GetSensorInfo();
     bool CheckHeader();
     bool CheckFiles();
     bool CheckDate();

@@ -16,6 +16,7 @@ TestLightTSDB::TestLightTSDB() : TestClass("LightTSDB", this), m_start1(0), m_st
 	addTest("Close", &TestLightTSDB::Close);
 	addTest("IndexSearch", &TestLightTSDB::IndexSearch);
 	addTest("GetSensorList", &TestLightTSDB::GetSensorList);
+	addTest("GetSensorInfo", &TestLightTSDB::GetSensorInfo);
 	addTest("CheckHeader", &TestLightTSDB::CheckHeader);
 	addTest("CheckFiles", &TestLightTSDB::CheckFiles);
 	addTest("CheckDate", &TestLightTSDB::CheckDate);
@@ -277,6 +278,31 @@ bool TestLightTSDB::GetSensorList()
     assert("MySensor"==(*it));
     ++it;
     assert("Sensor2"==*it);
+    return true;
+}
+
+bool TestLightTSDB::GetSensorInfo()
+{
+    LightTSDB::LightTSDB myTSDB;
+    LightTSDB::SensorInfo myInfo;
+    time_t hour;
+    bool ret;
+
+
+    ret = myTSDB.GetSensorInfo("MySensor", myInfo);
+    assert(true==ret);
+
+    SetMockTime(2017, 10, 24, 10, 0, 0);
+    MOCK::time(&hour);
+    assert(hour==myInfo.minDate);
+
+    SetMockTime(2017, 10, 24, 14, 0, 0);
+    MOCK::time(&hour);
+    assert(hour==myInfo.maxDate);
+
+    assert(LightTSDB::FileDataType::Float==myInfo.type);
+    assert(LightTSDB::LTSDB_VERSION==myInfo.version);
+
     return true;
 }
 
