@@ -193,7 +193,7 @@ class LightTSDB
         /// \param    hour         Hour
         /// \param    values       List of time/value
         /// \return   True if values are found
-        bool ReadValues(const std::string& sensor, time_t hour, std::list<DataValue>& values);
+        bool ReadValues(const std::string& sensor, const time_t hour, std::list<DataValue>& values);
 
         /// \brief    Read values into LightTSDB
         /// \details  Read values of a sensor into LightTSDB between two times.
@@ -202,7 +202,7 @@ class LightTSDB
         /// \param    hourEnd      Ending hour
         /// \param    values       List of time/value
         /// \return   True if values are found
-        bool ReadValues(const std::string& sensor, time_t hourBegin, time_t hourEnd, std::list<DataValue>& values);
+        bool ReadValues(const std::string& sensor, const time_t hourBegin, const time_t hourEnd, std::list<DataValue>& values);
 
         /// \brief    Read last value into LightTSDB
         /// \details  Read last value of a sensor into LightTSDB.
@@ -219,7 +219,7 @@ class LightTSDB
         /// \param    interval     Interval in seconds
         /// \param    values       List of time/value
         /// \return   True if values are found
-        bool ResampleValues(const std::string& sensor, time_t timeBegin, time_t timeEnd, std::list<DataValue>& values, int interval);
+        bool ResampleValues(const std::string& sensor, const time_t timeBegin, const time_t timeEnd, std::list<DataValue>& values, int interval);
 
         /// \brief    Close LightTSDB files
         /// \details  Close LightTSDB files (data and index) for a sensor.

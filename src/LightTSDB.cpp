@@ -220,7 +220,7 @@ bool LightTSDB::writeTimeValue(FilesInfo* filesInfo, void* pValue, time_t timest
     return true;
 }
 
-bool LightTSDB::ReadValues(const std::string& sensor, time_t hour, std::list<DataValue>& values)
+bool LightTSDB::ReadValues(const std::string& sensor, const time_t hour, std::list<DataValue>& values)
 {
     FilesInfo* filesInfo = getFilesInfo(sensor, FileDataType::Undefined);
     if(filesInfo == nullptr) return false;
@@ -248,7 +248,7 @@ bool LightTSDB::ReadValues(const std::string& sensor, time_t hour, std::list<Dat
     return true;
 }
 
-bool LightTSDB::ReadValues(const string& sensor, time_t timeBegin, time_t timeEnd, list<DataValue>& values)
+bool LightTSDB::ReadValues(const string& sensor, const time_t timeBegin, const time_t timeEnd, list<DataValue>& values)
 {
     FilesInfo* filesInfo = getFilesInfo(sensor, FileDataType::Undefined);
     if(filesInfo == nullptr) return false;
@@ -311,7 +311,7 @@ bool LightTSDB::ReadLastValue(const string& sensor, DataValue& dataValue)
     return true;
 }
 
-bool LightTSDB::ResampleValues(const string& sensor, time_t timeBegin, time_t timeEnd, list<DataValue>& values, int interval)
+bool LightTSDB::ResampleValues(const string& sensor, const time_t timeBegin, const time_t timeEnd, list<DataValue>& values, const int interval)
 {
     list<DataValue> readValues;
     vector<ResamplingHelper::AverageValue> averages;
